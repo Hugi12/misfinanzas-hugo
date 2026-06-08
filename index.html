@@ -414,7 +414,7 @@ button,.card,.savings-card{touch-action:manipulation;}
         <div class="card card-green" onclick="nav('analitica')" style="cursor:pointer;transition:transform .15s" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform=''">
           <div class="card-title">Dinero acumulado <span style="opacity:.4;font-size:10px;">histórico</span></div>
           <div class="card-value lg" id="kpi-accumulated">—</div>
-          <div class="card-sub" id="kpi-accumulated-sub">ingresos históricos − gastos históricos</div>
+          <div class="card-sub" id="kpi-accumulated-sub">ahorro libre + metas + budget disponible</div>
         </div>
         <div class="card card-accent" onclick="nav('presupuestos')" style="cursor:pointer;transition:transform .15s" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform=''">
           <div class="card-title">Balance del mes <span style="opacity:.4;font-size:10px;">vs budget</span></div>
@@ -1549,12 +1549,34 @@ async function handleBudgetCategoryChange(){
     if(help) help.textContent = 'Puedes definir cuánto planeas gastar este mes en esta categoría.';
   }
 }
+async function calcBudgetReserveMXN(month=null){
+  const budgets = month ? await db.budgets.where('month').equals(month).toArray() : await db.budgets.toArray();
+  const expenses = month ? await db.expenses.where('month').equals(month).toArray() : await db.expenses.toArray();
+  const plannedByMonth = {};
+  const spentByMonth = {};
+  budgets.forEach(b=>{
+    const m = b.month || state.currentMonth;
+    const planned = b.plannedCurrency==='EUR' ? (Number(b.plannedAmount)||0)*state.exchangeRate : (Number(b.plannedAmount)||0);
+    plannedByMonth[m] = (plannedByMonth[m]||0) + planned;
+  });
+  expenses.forEach(e=>{
+    const m = e.month || (e.date||'').slice(0,7) || state.currentMonth;
+    spentByMonth[m] = (spentByMonth[m]||0) + (Number(e.amountMXN)||0);
+  });
+  const months = new Set([...Object.keys(plannedByMonth), ...Object.keys(spentByMonth)]);
+  let total = 0;
+  months.forEach(m=>{
+    total += (plannedByMonth[m]||0) - (spentByMonth[m]||0);
+  });
+  return total;
+}
+
 async function calcHistoricalAccumulatedMXN(){
-  const incomes = await db.incomes.toArray();
-  const expenses = await db.expenses.toArray();
-  const totalInc = incomes.reduce((s,i)=>s+(Number(i.amountMXN)||0),0);
-  const totalExp = expenses.reduce((s,e)=>s+(Number(e.amountMXN)||0),0);
-  return totalInc - totalExp;
+  // Dinero acumulado = ahorro libre + metas + presupuesto disponible.
+  // Si un mes se gasta más que su presupuesto, el excedente resta del acumulado.
+  const savingsMXN = await calcTotalSavingsMXN();
+  const budgetReserveMXN = await calcBudgetReserveMXN();
+  return savingsMXN + budgetReserveMXN;
 }
 async function calcAutoSavedThisMonthMXN(month=state.currentMonth){
   const incomes = await db.incomes.where('month').equals(month).toArray();
@@ -1944,7 +1966,7 @@ async function renderDashboard(){
     accEl.textContent = fmt(accumulatedDisp);
     accEl.style.color = accumulatedDisp>=0?'var(--green)':'var(--red)';
     const sub = document.getElementById('kpi-accumulated-sub');
-    if(sub) sub.textContent = autoSavedMXN>0 ? `incluye ${fmt(convertToDisplay(autoSavedMXN,'MXN'))} no usado del mes` : 'ingresos históricos − gastos históricos';
+    if(sub) sub.textContent = `ahorro libre + metas + budget disponible (${fmt(convertToDisplay(await calcBudgetReserveMXN(month),'MXN'))} este mes)`;
   }
 
   document.getElementById('kpi-balance').textContent = fmt(remaining);
