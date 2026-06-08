@@ -287,6 +287,26 @@ button,.card,.savings-card{touch-action:manipulation;}
   #main{height:100svh;}
 }
 
+
+/* MOBILE SAFE RECORD CARDS */
+.record-card{display:none;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:10px;cursor:pointer;}
+.record-main{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+.record-title{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:58vw;}
+.record-sub{font-size:11.5px;color:var(--text3);margin-top:2px;}
+.record-amount{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;}
+.record-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.budget-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+.budget-summary .card-value{font-size:22px;}
+@media(max-width:768px){
+  .table-wrap table, #ingresos-table table, #gastos-table table, #budget-table table{display:none;}
+  .record-card{display:block;}
+  .budget-summary{grid-template-columns:1fr 1fr;}
+  #topbar{padding:0 12px;gap:8px;}
+  .rate-badge span{display:none;}
+  .ct-btn{padding:4px 10px;}
+}
+@media(max-width:420px){.budget-summary{grid-template-columns:1fr}.record-title{max-width:52vw}}
+
 /* MOBILE */
 @media(max-width:768px){
   #sidebar{position:fixed;left:-220px;top:0;bottom:0;height:100vh;height:100dvh;transition:left .3s;z-index:20;overflow-y:auto;}
@@ -567,6 +587,7 @@ button,.card,.savings-card{touch-action:manipulation;}
         <div class="month-display" id="currentMonthDisplayPresupuesto"></div>
         <button class="month-nav-btn" onclick="nextMonth()">›</button>
       </div>
+      <div class="budget-summary" id="budget-summary"></div>
       <div class="card">
         <div id="budget-table"></div>
       </div>
@@ -1538,7 +1559,7 @@ async function saveMeta(){
   if(editId){ await db.savingsGoals.update(parseInt(editId),rec); delete document.getElementById('modalMeta').dataset.editId; }
   else await db.savingsGoals.add(rec);
   closeModal('modalMeta');
-  renderSavings();
+  renderAll();
   showToast(editId ? '✅ Meta actualizada' : '✅ Meta creada');
 }
 
@@ -1570,7 +1591,7 @@ async function saveBudget(){
   if(existing) await db.budgets.update(existing.id,{plannedAmount:amount,plannedCurrency:currency});
   else await db.budgets.add({month,categoryId:catId,plannedAmount:amount,plannedCurrency:currency});
   closeModal('modalPresupuesto');
-  renderBudgets();
+  renderAll();
   showToast('✅ Presupuesto guardado');
 }
 
@@ -1638,32 +1659,42 @@ function calcSavingsTotalMXN(goals){
 
 async function openSavingsTotalModal(){
   const goals = await db.savingsGoals.toArray();
-  const calculatedMXN = goals.reduce((s,g)=>s+(g.targetCurrency==='EUR'?g.currentAmount*state.exchangeRate:g.currentAmount),0);
+  const calculatedMXN = goals.reduce((sum,g)=>sum+(g.targetCurrency==='EUR'?(Number(g.currentAmount)||0)*state.exchangeRate:(Number(g.currentAmount)||0)),0);
   const ov = state.savingsTotalOverride;
   document.getElementById('sat-enabled').checked = !!(ov && ov.enabled);
   document.getElementById('sat-currency').value = ov?.currency || state.currency || 'MXN';
-  const amount = ov ? ov.amount : convertToDisplay(calculatedMXN,'MXN');
-  document.getElementById('sat-amount').value = Number(amount || 0).toFixed(2);
+  const amount = ov && ov.enabled ? ov.amount : convertToDisplay(calculatedMXN,'MXN');
+  document.getElementById('sat-amount').value = Number(amount||0).toFixed(2);
   document.getElementById('modalSavingsTotal').classList.add('open');
 }
-
 async function saveSavingsTotalOverride(){
-  const amount = parseFloat(document.getElementById('sat-amount').value);
-  if(!Number.isFinite(amount) || amount < 0){ showToast('⚠️ Ingresa un monto válido'); return; }
-  const rec = {enabled:document.getElementById('sat-enabled').checked,amount,currency:document.getElementById('sat-currency').value,updatedAt:new Date().toISOString()};
-  state.savingsTotalOverride = rec;
-  await db.settings.put({key:'savingsTotalOverride',value:rec});
+  const enabled = document.getElementById('sat-enabled').checked;
+  const amount = parseFloat(document.getElementById('sat-amount').value)||0;
+  const currency = document.getElementById('sat-currency').value;
+  state.savingsTotalOverride = {enabled,amount,currency};
+  await db.settings.put({key:'savingsTotalOverride',value:state.savingsTotalOverride});
   closeModal('modalSavingsTotal');
   renderAll();
-  showToast(rec.enabled ? '✅ Ahorro total manual guardado' : '✅ Total manual guardado pero desactivado');
+  showToast('✅ Ahorro acumulado actualizado');
 }
-
 async function clearSavingsTotalOverride(){
-  state.savingsTotalOverride = null;
-  await db.settings.delete('savingsTotalOverride');
+  state.savingsTotalOverride = {enabled:false,amount:0,currency:state.currency};
+  await db.settings.put({key:'savingsTotalOverride',value:state.savingsTotalOverride});
   closeModal('modalSavingsTotal');
   renderAll();
-  showToast('✅ Ahorro total vuelve a calcularse por metas');
+  showToast('✅ Usando ahorro calculado desde metas');
+}
+async function calcCarryoverBeforeMonth(month){
+  const incomes = await db.incomes.toArray();
+  const expenses = await db.expenses.toArray();
+  const txs = await db.savingsTransactions.toArray();
+  const inc = incomes.filter(i=>i.month < month).reduce((sum,i)=>sum+(Number(i.amountMXN)||0),0);
+  const exp = expenses.filter(e=>e.month < month).reduce((sum,e)=>sum+(Number(e.amountMXN)||0),0);
+  const savingsNet = txs.filter(t=>(t.date||'').slice(0,7) < month).reduce((sum,t)=>{
+    const mxn = t.currency==='EUR' ? (Number(t.amount)||0)*state.exchangeRate : (Number(t.amount)||0);
+    return sum + (t.type==='deposit' ? mxn : -mxn);
+  },0);
+  return inc - exp - savingsNet;
 }
 
 // ================================================
@@ -1865,7 +1896,8 @@ async function renderGastos(){
 
   const table = document.getElementById('gastos-table');
   if(!expenses.length){ table.innerHTML='<div class="empty"><div class="empty-icon">🎉</div><div class="empty-title">Sin gastos</div><div class="empty-sub">No hay gastos registrados para este mes</div></div>'; return; }
-  table.innerHTML=`<table><thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th style="text-align:right">Monto</th><th style="text-align:right">Acciones</th></tr></thead><tbody>${
+  const expenseCards = expenses.map(e=>{ const cat=catMap[e.categoryId]||{icon:'📌',color:'#6b7280',name:'Otros'}; const dispAmt=convertToDisplay(e.amountMXN,'MXN'); return `<div class="record-card" onclick="editExpenseRow(${e.id})"><div class="record-main"><div><div class="record-title">${e.description||'Sin descripción'}</div><div class="record-sub">${new Date(e.date+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short'})} · ${cat.icon} ${cat.name}</div></div><div class="record-amount" style="color:var(--red)">−${fmt(dispAmt)}</div></div><div class="record-actions"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editExpenseRow(${e.id})">✏️ Editar</button><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteExpense(${e.id})">🗑 Borrar</button></div></div>`; }).join('');
+  table.innerHTML=`${expenseCards}<table><thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th style="text-align:right">Monto</th><th style="text-align:right">Acciones</th></tr></thead><tbody>${
     expenses.map(e=>{
       const cat=catMap[e.categoryId]||{icon:'📌',color:'#6b7280',name:'Otros'};
       const dispAmt=convertToDisplay(e.amountMXN,'MXN');
@@ -1913,10 +1945,10 @@ async function renderIngresos(){
   document.getElementById('ingresos-extras').textContent = fmt(extras);
   const typeLabels = {salary:'Nómina',bonus:'Bono',extra:'Ingreso extra',reimbursement:'Reembolso',other:'Otro'};
   const table = document.getElementById('ingresos-table');
-  if(!incomes.length){ table.innerHTML='<div class="empty"><div class="empty-icon">💰</div><div class="empty-title">Sin ingresos registrados</div><div class="empty-sub">Agrega tu nómina y otros ingresos</div></div>'; return; }
-  table.innerHTML=`<table><thead><tr><th>Fecha</th><th>Descripción</th><th>Tipo</th><th>Recurrencia</th><th style="text-align:right">Monto</th><th style="text-align:right">Acciones</th></tr></thead><tbody>${
-    incomes.map(i=>`<tr><td style="color:var(--text3);font-size:12px">${new Date(i.date+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short'})}</td><td style="font-weight:500">${i.description||typeLabels[i.type]}</td><td><span class="badge badge-green">${typeLabels[i.type]||i.type}</span></td><td><span class="badge badge-blue" style="opacity:${i.recurrence&&i.recurrence!=='once'?1:.35}">${i.recurrence||'once'}</span></td><td class="tr-amount" style="text-align:right;color:var(--green)">+${fmt(convertToDisplay(i.amountMXN,'MXN'))}</td><td style="text-align:right;white-space:nowrap"><button class="btn btn-ghost btn-sm btn-icon" onclick="editIncomeRow(${i.id})" style="margin-right:4px">✏️</button><button class="btn btn-ghost btn-sm btn-icon" onclick="deleteIncome(${i.id})">🗑</button></td></tr>`).join('')
-  }</tbody></table>`;
+  if(!incomes.length){ table.innerHTML='<div class="empty"><div class="empty-icon">💰</div><div class="empty-title">Sin ingresos</div><div class="empty-sub">Registra tu primer ingreso del mes</div></div>'; return; }
+  const rowsHtml = incomes.map(i=>`<tr onclick="editIncomeRow(${i.id})" style="cursor:pointer"><td style="color:var(--text3);font-size:12px">${new Date(i.date+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short'})}</td><td><span style="font-weight:500">${i.description||typeLabels[i.type]}</span></td><td><span class="badge badge-green">${typeLabels[i.type]}</span></td><td class="tr-amount" style="text-align:right;color:var(--green)">+${fmt(convertToDisplay(i.amountMXN,'MXN'))}</td><td style="text-align:right;white-space:nowrap"><button class="btn btn-ghost btn-sm btn-icon" onclick="event.stopPropagation();editIncomeRow(${i.id})" style="margin-right:4px">✏️</button><button class="btn btn-ghost btn-sm btn-icon" onclick="event.stopPropagation();deleteIncome(${i.id})">🗑</button></td></tr>`).join('');
+  const cardsHtml = incomes.map(i=>`<div class="record-card" onclick="editIncomeRow(${i.id})"><div class="record-main"><div><div class="record-title">${i.description||typeLabels[i.type]}</div><div class="record-sub">${new Date(i.date+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short'})} · ${typeLabels[i.type]}</div></div><div class="record-amount" style="color:var(--green)">+${fmt(convertToDisplay(i.amountMXN,'MXN'))}</div></div><div class="record-actions"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editIncomeRow(${i.id})">✏️ Editar</button><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteIncome(${i.id})">🗑 Borrar</button></div></div>`).join('');
+  table.innerHTML=`${cardsHtml}<table><thead><tr><th>Fecha</th><th>Descripción</th><th>Tipo</th><th style="text-align:right">Monto</th><th style="text-align:right">Acciones</th></tr></thead><tbody>${rowsHtml}</tbody></table>`;
 }
 async function editIncomeRow(id){
   const i = await db.incomes.get(id);
@@ -2005,7 +2037,7 @@ async function editGoal(id){
   document.querySelector('#modalMeta .modal-title').textContent = '✏️ Editar meta de ahorro';
   document.getElementById('modalMeta').classList.add('open');
 }
-async function deleteGoal(id){ if(!confirm('¿Eliminar esta meta?'))return; await db.savingsGoals.delete(id); renderSavings(); showToast('🗑️ Meta eliminada'); }
+async function deleteGoal(id){ if(!confirm('¿Eliminar esta meta?'))return; await db.savingsGoals.delete(id); renderAll(); showToast('🗑️ Meta eliminada'); }
 
 // ================================================
 // PRESUPUESTOS
@@ -2018,6 +2050,23 @@ async function renderBudgets(){
   const budMap = Object.fromEntries(budgets.map(b=>[b.categoryId,b]));
   const expMap = {};
   expenses.forEach(e=>{ expMap[e.categoryId]=(expMap[e.categoryId]||0)+e.amountMXN; });
+
+  const incomes = await db.incomes.where('month').equals(state.currentMonth).toArray();
+  const monthIncomeMXN = incomes.reduce((sum,i)=>sum+(Number(i.amountMXN)||0),0);
+  const carryoverMXN = await calcCarryoverBeforeMonth(state.currentMonth);
+  const monthExpensesMXN = expenses.reduce((sum,e)=>sum+(Number(e.amountMXN)||0),0);
+  const plannedMXN = budgets.reduce((sum,b)=>sum+(b.plannedCurrency==='EUR'?(Number(b.plannedAmount)||0)*state.exchangeRate:(Number(b.plannedAmount)||0)),0);
+  const availableMXN = monthIncomeMXN + carryoverMXN;
+  const projectedLeftMXN = availableMXN - plannedMXN;
+  const realLeftMXN = availableMXN - monthExpensesMXN;
+  const summaryEl = document.getElementById('budget-summary');
+  if(summaryEl){
+    summaryEl.innerHTML = `
+      <div class="card card-green"><div class="card-title">Disponible del mes</div><div class="card-value">${fmt(convertToDisplay(availableMXN,'MXN'))}</div><div class="card-sub">ingresos + acumulado anterior</div></div>
+      <div class="card"><div class="card-title">Acumulado anterior</div><div class="card-value">${fmt(convertToDisplay(carryoverMXN,'MXN'))}</div><div class="card-sub">no gastado ni ahorrado</div></div>
+      <div class="card card-blue"><div class="card-title">Planeado gastar</div><div class="card-value">${fmt(convertToDisplay(plannedMXN,'MXN'))}</div><div class="card-sub">presupuestos configurados</div></div>
+      <div class="card ${realLeftMXN>=0?'card-green':'card-amber'}"><div class="card-title">Restante real</div><div class="card-value">${fmt(convertToDisplay(realLeftMXN,'MXN'))}</div><div class="card-sub">disponible - gastos reales</div></div>`;
+  }
 
   const container = document.getElementById('budget-table');
   const rows = cats.map(cat=>{
@@ -2040,11 +2089,18 @@ async function renderBudgets(){
       <td style="min-width:100px">
         ${budMXN>0?`<div class="progress-bar"><div class="progress-fill ${barClass}" style="width:${Math.min(100,pct)}%"></div></div><div style="font-size:11px;color:var(--text3);margin-top:2px">${pct}%</div>`:'<span style="color:var(--text3);font-size:12px">sin presupuesto</span>'}
       </td>
-      <td><button class="btn btn-ghost btn-sm btn-icon" onclick="editBudgetRow(${cat.id})" title="Editar presupuesto">✏️</button></td>
+      <td style="white-space:nowrap"><button class="btn btn-ghost btn-sm btn-icon" onclick="editBudgetRow(${cat.id})" title="Editar presupuesto">✏️</button><button class="btn btn-ghost btn-sm btn-icon" onclick="deleteBudgetRow(${cat.id})" title="Eliminar presupuesto" style="margin-left:4px">🗑</button></td>
     </tr>`;
   }).filter(Boolean).join('');
 
-  container.innerHTML = rows?`<table><thead><tr><th>Categoría</th><th>Presupuestado</th><th>Gastado</th><th>Diferencia</th><th>Avance</th><th></th></tr></thead><tbody>${rows}</tbody></table>`
+  const mobileRows = cats.map(cat=>{
+    const bud = budMap[cat.id]; const budMXN = bud?(bud.plannedCurrency==='EUR'?bud.plannedAmount*state.exchangeRate:bud.plannedAmount):0;
+    const expMXN = expMap[cat.id]||0; if(!(budMXN>0||expMXN>0)) return '';
+    const diff = budMXN-expMXN;
+    return `<div class="record-card" onclick="editBudgetRow(${cat.id})"><div class="record-main"><div><div class="record-title">${cat.icon} ${cat.name}</div><div class="record-sub">Presupuesto: ${budMXN?fmt(convertToDisplay(budMXN,'MXN')):'—'} · Gastado: ${expMXN?fmt(convertToDisplay(expMXN,'MXN')):'—'}</div></div><div class="record-amount" style="color:${diff>=0?'var(--green)':'var(--red)'}">${diff>=0?'+':'-'}${fmt(convertToDisplay(Math.abs(diff),'MXN'))}</div></div><div class="record-actions"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editBudgetRow(${cat.id})">✏️ Editar</button><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteBudgetRow(${cat.id})">🗑 Borrar</button></div></div>`;
+  }).join('');
+
+  container.innerHTML = rows?`${mobileRows}<table><thead><tr><th>Categoría</th><th>Presupuestado</th><th>Gastado</th><th>Diferencia</th><th>Avance</th><th></th></tr></thead><tbody>${rows}</tbody></table>`
     :`<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">Sin presupuesto configurado</div><div class="empty-sub">Agrega presupuestos por categoría para este mes</div></div>`;
 }
 
@@ -2060,6 +2116,15 @@ async function editBudgetRow(catId){
     document.getElementById('b-currency').value = 'MXN';
   }
   openModal('modalPresupuesto');
+}
+
+async function deleteBudgetRow(catId){
+  const existing = await db.budgets.where({month:state.currentMonth,categoryId:catId}).first();
+  if(!existing){ showToast('No hay presupuesto para borrar'); return; }
+  if(!confirm('¿Eliminar este presupuesto?')) return;
+  await db.budgets.delete(existing.id);
+  renderAll();
+  showToast('🗑️ Presupuesto eliminado');
 }
 
 // ================================================
