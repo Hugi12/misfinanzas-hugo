@@ -10,7 +10,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23E1000F'/><text y='.9em' font-size='70' x='15'>💰</text></svg>">
 <link rel="manifest" href="data:application/json,%7B%22name%22%3A%22MisFinanzas%22%2C%22short_name%22%3A%22Finanzas%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230a0a0f%22%2C%22theme_color%22%3A%22%23E1000F%22%7D">
-<title>MisFinanzas — Hugo Castillo</title>
+<title>MisFinanzas — Hugo Castillo v7</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
@@ -353,7 +353,7 @@ button,.card,.savings-card{touch-action:manipulation;}
     <div class="sidebar-logo-icon">H</div>
     <div>
       <div class="sidebar-logo-text">MisFinanzas</div>
-      <div class="sidebar-logo-sub">Hugo Castillo</div>
+      <div class="sidebar-logo-sub">Hugo Castillo · v7 ahorro automático</div>
     </div>
   </div>
   <div class="sidebar-section">Principal</div>
@@ -402,18 +402,13 @@ button,.card,.savings-card{touch-action:manipulation;}
 
       <!-- KPIs -->
       <div class="grid-4" style="margin-bottom:16px;">
-        <div class="card card-green" onclick="nav('analitica')" style="cursor:pointer;transition:transform .15s" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform=''">
-          <div class="card-title">Dinero acumulado <span style="opacity:.4;font-size:10px;">histórico</span></div>
-          <div class="card-value lg" id="kpi-accumulated">—</div>
-          <div class="card-sub" id="kpi-accumulated-sub">ingresos históricos − gastos históricos</div>
-        </div>
-        <div class="card card-accent" onclick="nav('presupuestos')" style="cursor:pointer;transition:transform .15s" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform=''">
-          <div class="card-title">Balance del mes <span style="opacity:.4;font-size:10px;">vs budget</span></div>
+        <div class="card card-accent" onclick="nav('ingresos')" style="cursor:pointer;transition:transform .15s" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform=''">
+          <div class="card-title">Balance del mes <span style="opacity:.4;font-size:10px;">→ Ingresos</span></div>
           <div class="card-value lg" id="kpi-balance">—</div>
-          <div class="card-sub" id="kpi-balance-sub">presupuesto - gastos</div>
+          <div class="card-sub" id="kpi-balance-sub">ingresos - gastos</div>
         </div>
-        <div class="card card-green configurable-card" onclick="openSavingsTotalModal()" title="Clic para configurar el ahorro acumulado total">
-          <div class="card-title">Ahorro acumulado <span style="opacity:.4;font-size:10px;">→ configurar</span></div>
+        <div class="card card-green" onclick="nav('ahorros')" style="cursor:pointer;transition:transform .15s" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform=''" title="Ver y registrar ahorros">
+          <div class="card-title">Ahorro acumulado <span style="opacity:.4;font-size:10px;">→ Ahorros</span></div>
           <div class="card-value lg" id="kpi-savings">—</div>
           <div class="card-sub" id="kpi-savings-sub">en todos los objetivos</div>
         </div>
@@ -559,10 +554,10 @@ button,.card,.savings-card{touch-action:manipulation;}
         <button class="btn btn-primary" onclick="openModal('modalMeta')">+ Nueva meta</button>
       </div>
       <div class="grid-3" style="margin-bottom:20px;">
-        <div class="card card-green configurable-card" onclick="openSavingsTotalModal()" title="Clic para configurar el ahorro acumulado total">
-          <div class="card-title">Ahorro acumulado total <span style="opacity:.45;font-size:10px;">→ configurar</span></div>
+        <div class="card card-green" style="cursor:default" title="Se calcula automáticamente desde ingresos clasificados como ahorro y metas">
+          <div class="card-title">Ahorro acumulado total <span style="opacity:.45;font-size:10px;">automático</span></div>
           <div class="card-value" id="savings-total">—</div>
-          <div class="card-sub" id="savings-total-sub">clic para ajustar manualmente</div>
+          <div class="card-sub" id="savings-total-sub">calculado desde metas y depósitos</div>
         </div>
         <div class="card">
           <div class="card-title">Aportación mensual</div>
@@ -838,16 +833,6 @@ button,.card,.savings-card{touch-action:manipulation;}
         <option value="EUR">EUR</option>
       </select>
     </div>
-    <div class="form-group">
-      <label class="form-label">Predictivo Barcelona 2026 (opcional)</label>
-      <div class="input-group">
-        <select class="form-input" id="g-barcelona-preset" onchange="previewBarcelonaEstimate()">
-          <option value="">Selecciona una referencia reciente...</option>
-        </select>
-        <button class="btn btn-ghost" type="button" onclick="applyBarcelonaEstimate()" style="border-radius:0 var(--r-sm) var(--r-sm) 0;white-space:nowrap;">Usar</button>
-      </div>
-      <div class="card-sub" id="g-barcelona-note">Te ayuda a precargar un monto estimado; luego puedes ajustar el gasto real.</div>
-    </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Categoría</label>
         <select class="form-input" id="g-category" onchange="updateSubcats()"></select>
@@ -892,14 +877,14 @@ button,.card,.savings-card{touch-action:manipulation;}
     <div class="modal-title">Registrar ingreso</div>
     <div class="input-group" style="margin-bottom:16px;">
       <input class="form-input" type="number" id="i-amount" placeholder="0.00" step="0.01" style="font-size:20px;font-weight:600;">
-      <select class="form-input" id="i-currency">
+      <select class="form-input" id="i-currency" onchange="populateIncomeSavingsGoalSelect()">
         <option value="MXN">MXN</option>
         <option value="EUR">EUR</option>
       </select>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Tipo</label>
-        <select class="form-input" id="i-type" onchange="handleIncomeTypeChange()">
+        <select class="form-input" id="i-type" onchange="handleIncomeTypeChange(true)">
           <option value="salary">Nómina / Salario</option>
           <option value="bonus">Bono</option>
           <option value="extra">Ingreso extra</option>
@@ -916,8 +901,11 @@ button,.card,.savings-card{touch-action:manipulation;}
           <option value="Barcelona">Barcelona</option>
         </select>
       </div>
-      <div class="form-group"><label class="form-label">Descripción automática</label><input class="form-input" id="i-desc" placeholder="ej. Nómina de Henkel Toluca"></div>
+      <div class="form-group"><label class="form-label">Acción rápida</label>
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('i-save-as-savings').checked=true;toggleIncomeSavingsSelect();populateIncomeSavingsGoalSelect();">Mandar este ingreso a ahorro</button>
+      </div>
     </div>
+    <div class="form-group"><label class="form-label">Descripción</label><input class="form-input" id="i-desc" placeholder="ej. Nómina Henkel junio"></div>
     <div class="form-group"><label class="form-label">Recurrencia</label>
       <select class="form-input" id="i-recurrence">
         <option value="once">Única vez</option>
@@ -926,6 +914,16 @@ button,.card,.savings-card{touch-action:manipulation;}
         <option value="monthly">Mensual</option>
         <option value="annual">Anual</option>
       </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="checkbox" id="i-save-as-savings" onchange="toggleIncomeSavingsSelect()"> Clasificar este ingreso como ahorro inmediato
+      </label>
+      <div style="font-size:11px;color:var(--text3);margin-top:-4px;">Úsalo cuando te llegue un dinerito y quieras mandarlo directo a ahorro.</div>
+    </div>
+    <div class="form-group" id="i-savings-select-wrap" style="display:none;">
+      <label class="form-label">Meta / bolsa de ahorro</label>
+      <select class="form-input" id="i-savings-goal"></select>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modalIngreso')">Cancelar</button>
@@ -1034,14 +1032,13 @@ button,.card,.savings-card{touch-action:manipulation;}
     <div class="modal-title">Configurar presupuesto</div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Categoría</label>
-        <select class="form-input" id="b-category" onchange="handleBudgetCategoryChange()"></select>
+        <select class="form-input" id="b-category"></select>
       </div>
       <div class="form-group"><label class="form-label">Monto presupuestado</label>
         <div class="input-group">
           <input class="form-input" type="number" id="b-amount" placeholder="0.00">
           <select class="form-input" id="b-currency"><option value="MXN">MXN</option><option value="EUR">EUR</option></select>
         </div>
-        <div class="card-sub" id="b-help" style="margin-top:6px;">Puedes definir cuánto planeas gastar este mes.</div>
       </div>
     </div>
     <div class="modal-footer">
@@ -1108,22 +1105,14 @@ button,.card,.savings-card{touch-action:manipulation;}
 </div>
 
 
-<!-- Modal Ahorro Total Manual -->
+<!-- Modal Ahorro Total Manual deshabilitado en v7 -->
 <div class="modal-overlay" id="modalSavingsTotal">
   <div class="modal" style="position:relative;">
     <button class="modal-close" onclick="closeModal('modalSavingsTotal')">✕</button>
-    <div class="modal-title">Configurar ahorro acumulado total</div>
-    <div class="alert alert-blue">Este valor puede sobrescribir el total calculado por metas. Útil si quieres capturar tu ahorro real global sin dividirlo por objetivo.</div>
-    <div class="form-group"><label class="form-label">Ahorro acumulado total</label>
-      <div class="input-group">
-        <input class="form-input" type="number" id="sat-amount" placeholder="0.00" step="0.01" style="font-size:18px;font-weight:600;">
-        <select class="form-input" id="sat-currency"><option value="MXN">MXN</option><option value="EUR">EUR</option></select>
-      </div>
-    </div>
-    <div class="form-group"><label class="form-label" style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="sat-enabled"> Usar este total manual</label></div>
+    <div class="modal-title">Ahorro acumulado automático</div>
+    <div class="alert alert-blue">El ahorro acumulado ya no se sobreescribe manualmente. Para sumar dinero al ahorro, registra un ingreso y activa “Clasificar este ingreso como ahorro inmediato”.</div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="clearSavingsTotalOverride()">Quitar manual</button>
-      <button class="btn btn-primary" onclick="saveSavingsTotalOverride()">💾 Guardar total</button>
+      <button class="btn btn-primary" onclick="closeModal('modalSavingsTotal'); openModal('modalIngreso'); setTimeout(()=>{document.getElementById('i-save-as-savings').checked=true; toggleIncomeSavingsSelect(); populateIncomeSavingsGoalSelect();},100);">Registrar ingreso como ahorro</button>
     </div>
   </div>
 </div>
@@ -1219,15 +1208,15 @@ async function init(){
   state.profile = await db.profile.get(1);
   if(!state.profile){
     const movingDate = new Date('2026-08-01');
-    state.profile = {id:1,name:'Hugo Nathaniel Castillo González',currentCity:'Toluca, México',destinationCity:'Barcelona, España',movingDate:movingDate.toISOString().slice(0,10),incomeMXN:0,incomeEUR:0,primaryCurrency:'MXN'};
+    state.profile = {id:1,name:'Hugo Nathaniel Castillo González',currentCity:'Toluca, México',destinationCity:'España',movingDate:movingDate.toISOString().slice(0,10),incomeMXN:22043.80,incomeEUR:2303,primaryCurrency:'MXN'};
     await db.profile.put(state.profile);
   }
   document.getElementById('cfg-mudanza').value = state.profile.movingDate || '';
   document.getElementById('cfg-nombre').value = state.profile.name || '';
   document.getElementById('cfg-ciudad').value = state.profile.currentCity || '';
   document.getElementById('cfg-destino').value = state.profile.destinationCity || '';
-  document.getElementById('cfg-income-mxn').value = state.profile.incomeMXN || 0;
-  document.getElementById('cfg-income-eur').value = state.profile.incomeEUR || 0;
+  document.getElementById('cfg-income-mxn').value = state.profile.incomeMXN || 22043.80;
+  document.getElementById('cfg-income-eur').value = state.profile.incomeEUR || 2303;
 
   // Load API Key
   const keyRecord = await db.settings.get('apiKey');
@@ -1236,8 +1225,6 @@ async function init(){
   const savingsOverride = await db.settings.get('savingsTotalOverride');
   if(savingsOverride) state.savingsTotalOverride = savingsOverride.value;
 
-  await cleanupDemoFinancialData();
-
   // Load exchange rate
   await fetchRate(true);
 
@@ -1245,28 +1232,17 @@ async function init(){
   const relocCount = await db.relocationItems.count();
   if(relocCount === 0) await seedRelocItems();
 
-  // Datos financieros: arranque limpio en 0. No se crean ingresos, gastos, metas ni presupuestos demo.
+  // Seed demo savings if empty
+  const savingsCount = await db.savingsGoals.count();
+  if(savingsCount === 0) await seedSavings();
 
-  await renderAll();
+  // Seed demo income if empty
+  const incomeCount = await db.incomes.count();
+  if(incomeCount === 0) await seedDemoIncome();
+
+  renderAll();
   updateCountdown();
   setInterval(updateCountdown, 60000);
-}
-
-
-async function cleanupDemoFinancialData(){
-  const applied = await db.settings.get('cleanStartV3Applied');
-  if(applied) return;
-  const demoIncome = await db.incomes.filter(i=>i.description==='Nómina Henkel Toluca' && Number(i.amountMXN)===22043.80).toArray();
-  for(const i of demoIncome) await db.incomes.delete(i.id);
-  const demoNames = ['Fondo de Emergencia','Mudanza a España','Fondo Viajes'];
-  const demoGoals = await db.savingsGoals.filter(g=>demoNames.includes(g.name) && [18000,42000,5000].includes(Number(g.currentAmount))).toArray();
-  for(const g of demoGoals) await db.savingsGoals.delete(g.id);
-  const ov = await db.settings.get('savingsTotalOverride');
-  if(ov?.value?.amount && Number(ov.value.amount)>0 && demoGoals.length){
-    state.savingsTotalOverride = {enabled:false,amount:0,currency:'MXN'};
-    await db.settings.put({key:'savingsTotalOverride',value:state.savingsTotalOverride});
-  }
-  await db.settings.put({key:'cleanStartV3Applied',value:true});
 }
 
 async function seedDemoIncome(){
@@ -1362,7 +1338,7 @@ async function fetchRate(silent=false){
       await db.exchangeRates.add({from:'EUR',to:'MXN',rate:state.exchangeRate,source:api.source,timestamp:state.rateDate});
       await db.settings.put({key:'lastRate',value:state.exchangeRate,date:state.rateDate,source:api.source});
       updateRateBadge();
-      notifyDataChanged();
+      renderAll();
       if(!silent) showToast('✅ Tipo de cambio actualizado: ' + state.exchangeRate.toFixed(4));
       return;
     } catch(e){
@@ -1380,7 +1356,7 @@ async function fetchRate(silent=false){
     state.rateDate = null;
   }
   updateRateBadge();
-  notifyDataChanged();
+  renderAll();
   if(!silent) showToast('⚠️ No se pudo conectar a APIs. Usando tipo de cambio guardado/manual.');
 }
 
@@ -1416,8 +1392,8 @@ async function setManualRate(){
   await db.exchangeRates.add({from:'EUR',to:'MXN',rate:val,source:'manual',timestamp:state.rateDate});
   await db.settings.put({key:'lastRate',value:val,date:state.rateDate});
   updateRateBadge();
-  notifyDataChanged();
-  notifyDataChanged();
+  renderAll();
+  renderAll();
   showToast('✅ Tipo de cambio manual aplicado');
 }
 
@@ -1428,7 +1404,7 @@ function setCurrency(cur){
   state.currency = cur;
   document.getElementById('btn-mxn').classList.toggle('active', cur==='MXN');
   document.getElementById('btn-eur').classList.toggle('active', cur==='EUR');
-  notifyDataChanged();
+  renderAll();
 }
 
 // ================================================
@@ -1470,11 +1446,9 @@ async function openModal(id){
     document.getElementById('g-date').value = new Date().toISOString().slice(0,10);
     await populateCatSelect('g-category');
     await populateSavingsGoalSelect();
-    await populateBarcelonaEstimates();
-    const preset=document.getElementById('g-barcelona-preset'); if(preset) preset.value=''; previewBarcelonaEstimate();
   }
-  if(id==='modalIngreso'){ document.getElementById('i-date').value = new Date().toISOString().slice(0,10); handleIncomeTypeChange(true); }
-  if(id==='modalPresupuesto'){ await populateCatSelect('b-category'); setTimeout(handleBudgetCategoryChange,0); }
+  if(id==='modalIngreso'){ document.getElementById('i-date').value = new Date().toISOString().slice(0,10); await populateIncomeSavingsGoalSelect(); document.getElementById('i-save-as-savings').checked=false; toggleIncomeSavingsSelect(); handleIncomeTypeChange?.(true); }
+  if(id==='modalPresupuesto') await populateCatSelect('b-category');
   if(id==='modalEvento') document.getElementById('ev-date').value = new Date().toISOString().slice(0,10);
   if(id==='modalMeta'){
     delete document.getElementById('modalMeta').dataset.editId;
@@ -1492,6 +1466,8 @@ async function openModal(id){
   if(id==='modalIngreso'){
     delete document.getElementById('modalIngreso').dataset.editId;
     document.querySelector('#modalIngreso .modal-title').textContent = 'Registrar ingreso';
+    const chk=document.getElementById('i-save-as-savings'); if(chk) chk.checked=false;
+    toggleIncomeSavingsSelect();
   }
   if(id==='modalReloc'){
     delete document.getElementById('modalReloc').dataset.editId;
@@ -1511,12 +1487,7 @@ async function populateCatSelect(selectId){
   const cats = await db.categories.toArray();
   const sel = document.getElementById(selectId);
   if(!sel) return;
-  const baseOptions = cats.map(c=>`<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
-  if(selectId==='b-category'){
-    sel.innerHTML = `<option value="0">💼 Nómina del mes (auto)</option>` + baseOptions;
-  } else {
-    sel.innerHTML = baseOptions;
-  }
+  sel.innerHTML = cats.map(c=>`<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
 }
 
 async function populateSavingsGoalSelect(){
@@ -1526,109 +1497,70 @@ async function populateSavingsGoalSelect(){
   if(sel) sel.innerHTML = goals.map(g=>`<option value="${g.id}">${g.icon||'🏦'} ${g.name}</option>`).join('');
 }
 
+async function ensureDefaultSavingsGoal(currency='MXN'){
+  let goal = await db.savingsGoals.where('name').equals('Ahorro libre').first();
+  if(!goal){
+    const id = await db.savingsGoals.add({name:'Ahorro libre',icon:'💰',color:'#22c55e',targetAmount:0,targetCurrency:currency,currentAmount:0,monthlyContribution:0,type:'other',targetDate:null,isCompleted:false});
+    goal = await db.savingsGoals.get(id);
+  }
+  return goal;
+}
+
+async function populateIncomeSavingsGoalSelect(){
+  const sel = document.getElementById('i-savings-goal');
+  if(!sel) return;
+  let goals = (await db.savingsGoals.toArray()).filter(g=>!g.isCompleted);
+  if(!goals.length){
+    const g = await ensureDefaultSavingsGoal(document.getElementById('i-currency')?.value||'MXN');
+    goals = [g];
+  }
+  sel.innerHTML = goals.map(g=>`<option value="${g.id}">${g.icon||'🏦'} ${g.name}</option>`).join('');
+}
+
+function toggleIncomeSavingsSelect(){
+  const chk = document.getElementById('i-save-as-savings');
+  const wrap = document.getElementById('i-savings-select-wrap');
+  if(wrap) wrap.style.display = chk && chk.checked ? 'block' : 'none';
+}
+
+function handleIncomeTypeChange(force=false){
+  const type = document.getElementById('i-type')?.value;
+  const workplace = document.getElementById('i-workplace')?.value || 'Toluca';
+  const desc = document.getElementById('i-desc');
+  const wrap = document.getElementById('i-workplace-wrap');
+  if(wrap) wrap.style.display = type==='salary' ? 'grid' : 'grid';
+  if(type==='salary' && desc && (force || !desc.value || desc.value.startsWith('Nómina de Henkel'))){
+    desc.value = `Nómina de Henkel ${workplace}`;
+  }
+}
+
+async function applyIncomeSavingsDeposit(goalId, amount, currency, reason, date){
+  let goal = goalId ? await db.savingsGoals.get(parseInt(goalId)) : null;
+  if(!goal) goal = await ensureDefaultSavingsGoal(currency);
+  const amountInGoalCurrency = currency===goal.targetCurrency ? amount : (goal.targetCurrency==='EUR' ? amount/state.exchangeRate : amount*state.exchangeRate);
+  const newAmt = (Number(goal.currentAmount)||0) + amountInGoalCurrency;
+  await db.savingsGoals.update(goal.id,{currentAmount:newAmt});
+  const txId = await db.savingsTransactions.add({goalId:goal.id,amount:amountInGoalCurrency,currency:goal.targetCurrency,type:'deposit',reason:reason||'Ingreso clasificado como ahorro',date:date?new Date(date+'T12:00:00').toISOString():new Date().toISOString(),source:'income'});
+  return {txId, goalId:goal.id};
+}
+
+async function undoIncomeSavingsDeposit(income){
+  if(!income || !income.linkedSavingsTxId) return;
+  const tx = await db.savingsTransactions.get(income.linkedSavingsTxId);
+  if(tx){
+    const goal = await db.savingsGoals.get(tx.goalId);
+    if(goal){
+      const newAmt = Math.max(0,(Number(goal.currentAmount)||0) - (Number(tx.amount)||0));
+      await db.savingsGoals.update(goal.id,{currentAmount:newAmt});
+    }
+    await db.savingsTransactions.delete(tx.id);
+  }
+}
+
 function updateSubcats(){ /* simplified - no subcats in this version */ }
 function toggleSavingsSelect(){
   const checked = document.getElementById('g-from-savings').checked;
   document.getElementById('savings-select-wrap').style.display = checked ? 'block' : 'none';
-}
-
-async function getMonthlySalaryMXN(month=state.currentMonth){
-  const incomes = await db.incomes.where('month').equals(month).toArray();
-  return incomes.filter(i=>i.type==='salary').reduce((s,i)=>s+(Number(i.amountMXN)||0),0);
-}
-async function getBudgetPlannedMXN(month=state.currentMonth){
-  const budgets = await db.budgets.where('month').equals(month).toArray();
-  return budgets.reduce((sum,b)=>sum+(b.plannedCurrency==='EUR'?(Number(b.plannedAmount)||0)*state.exchangeRate:(Number(b.plannedAmount)||0)),0);
-}
-async function ensureSalaryBudget(month=state.currentMonth){
-  const salaryMXN = await getMonthlySalaryMXN(month);
-  const existing = await db.budgets.where({month,categoryId:0}).first();
-  if(salaryMXN>0 && !existing){
-    await db.budgets.add({month,categoryId:0,plannedAmount:salaryMXN,plannedCurrency:'MXN',isAutoSalary:true});
-  }
-}
-async function handleBudgetCategoryChange(){
-  const sel = document.getElementById('b-category');
-  if(!sel) return;
-  if(String(sel.value)==='0'){
-    const salaryMXN = await getMonthlySalaryMXN(state.currentMonth);
-    const existing = await db.budgets.where({month:state.currentMonth,categoryId:0}).first();
-    document.getElementById('b-currency').value = existing?.plannedCurrency || 'MXN';
-    const amountMXN = existing ? (existing.plannedCurrency==='EUR'?existing.plannedAmount*state.exchangeRate:existing.plannedAmount) : salaryMXN;
-    document.getElementById('b-amount').value = Number(convertToDisplay(amountMXN,'MXN')||0).toFixed(2);
-    document.getElementById('b-help').textContent = salaryMXN>0 ? `Detecté nómina del mes por ${fmt(convertToDisplay(salaryMXN,'MXN'))}. Puedes aumentar este monto si quieres sumar extras al budget.` : 'Aún no hay nómina registrada este mes; cuando la agregues, se tomará como base.';
-  } else {
-    document.getElementById('b-help').textContent = 'Puedes definir cuánto planeas gastar este mes en esta categoría.';
-  }
-}
-async function calcHistoricalAccumulatedMXN(){
-  const incomes = await db.incomes.toArray();
-  const expenses = await db.expenses.toArray();
-  const totalInc = incomes.reduce((s,i)=>s+(Number(i.amountMXN)||0),0);
-  const totalExp = expenses.reduce((s,e)=>s+(Number(e.amountMXN)||0),0);
-  return totalInc - totalExp;
-}
-async function calcAutoSavedThisMonthMXN(month=state.currentMonth){
-  const incomes = await db.incomes.where('month').equals(month).toArray();
-  const totalInc = incomes.reduce((s,i)=>s+(Number(i.amountMXN)||0),0);
-  const planned = await getBudgetPlannedMXN(month);
-  return Math.max(0,totalInc-planned);
-}
-
-
-// ================================================
-// PREDICTIVO BARCELONA 2026 / INGRESOS
-// ================================================
-const BARCELONA_2026_ESTIMATES = [
-  {key:'rent_room', label:'Renta habitación / piso compartido', amount:650, currency:'EUR', category:'Vivienda/Renta', desc:'Renta estimada Barcelona', note:'Referencia conservadora para habitación o piso compartido; ajusta con tu contrato real.'},
-  {key:'rent_flat', label:'Renta piso 1 habitación', amount:1000, currency:'EUR', category:'Vivienda/Renta', desc:'Renta estimada Barcelona', note:'Rango típico alto en Barcelona: puede variar mucho por zona y contrato.'},
-  {key:'utilities', label:'Servicios: luz, gas, agua, basura', amount:125, currency:'EUR', category:'Servicios', desc:'Servicios básicos Barcelona', note:'Estimado medio mensual para piso normal; puede subir con calefacción/AC.'},
-  {key:'internet', label:'Internet fibra hogar', amount:35, currency:'EUR', category:'Internet/Telefonía', desc:'Internet fibra Barcelona', note:'Rango común de fibra: aprox. 25–50 EUR/mes.'},
-  {key:'mobile', label:'Telefonía móvil', amount:20, currency:'EUR', category:'Internet/Telefonía', desc:'Plan móvil España', note:'Estimado para plan móvil básico/medio.'},
-  {key:'groceries', label:'Supermercado persona sola', amount:250, currency:'EUR', category:'Supermercado', desc:'Supermercado Barcelona', note:'Referencia mensual para una persona: aprox. 200–300 EUR.'},
-  {key:'transport', label:'Transporte público T-Usual 1 zona', amount:22.80, currency:'EUR', category:'Transporte', desc:'Transporte público Barcelona', note:'Referencia 2026 para T-Usual 1 zona con bonificación.'},
-  {key:'gym', label:'Gimnasio', amount:40, currency:'EUR', category:'Gimnasio', desc:'Gimnasio Barcelona', note:'Estimado mensual para gimnasio estándar.'},
-  {key:'restaurants', label:'Restaurantes / salidas', amount:160, currency:'EUR', category:'Restaurantes', desc:'Restaurantes Barcelona', note:'Predictivo editable para salidas moderadas.'},
-  {key:'subscriptions', label:'Suscripciones', amount:20, currency:'EUR', category:'Suscripciones', desc:'Suscripciones digitales', note:'Netflix, Spotify, iCloud u otros servicios.'},
-  {key:'health', label:'Seguro / salud extra', amount:60, currency:'EUR', category:'Salud', desc:'Salud / seguro extra', note:'Estimado preventivo si tienes cobertura privada o gastos no cubiertos.'},
-  {key:'leisure', label:'Ocio / entretenimiento', amount:120, currency:'EUR', category:'Ocio/Entretenimiento', desc:'Ocio Barcelona', note:'Estimado flexible para cine, planes y actividades.'}
-];
-
-async function populateBarcelonaEstimates(){
-  const sel = document.getElementById('g-barcelona-preset');
-  if(!sel) return;
-  sel.innerHTML = '<option value="">Selecciona una referencia reciente...</option>' + BARCELONA_2026_ESTIMATES.map(e=>`<option value="${e.key}">${e.label} — ${fmt(e.amount,e.currency)}</option>`).join('');
-}
-function getBarcelonaEstimate(){
-  const key = document.getElementById('g-barcelona-preset')?.value;
-  return BARCELONA_2026_ESTIMATES.find(e=>e.key===key);
-}
-function previewBarcelonaEstimate(){
-  const e = getBarcelonaEstimate();
-  const note = document.getElementById('g-barcelona-note');
-  if(note) note.textContent = e ? `${e.note} Monto editable: ${fmt(e.amount,e.currency)}.` : 'Te ayuda a precargar un monto estimado; luego puedes ajustar el gasto real.';
-}
-async function applyBarcelonaEstimate(){
-  const e = getBarcelonaEstimate();
-  if(!e){ showToast('Selecciona una referencia primero'); return; }
-  document.getElementById('g-amount').value = e.amount;
-  document.getElementById('g-currency').value = e.currency;
-  document.getElementById('g-desc').value = e.desc;
-  const cats = await db.categories.toArray();
-  const cat = cats.find(c=>c.name===e.category);
-  if(cat) document.getElementById('g-category').value = cat.id;
-  previewBarcelonaEstimate();
-  showToast('✅ Predictivo aplicado; ajusta el monto si lo necesitas');
-}
-function handleIncomeTypeChange(force=false){
-  const type = document.getElementById('i-type')?.value;
-  const wrap = document.getElementById('i-workplace-wrap');
-  const workplace = document.getElementById('i-workplace')?.value || 'Toluca';
-  const desc = document.getElementById('i-desc');
-  if(wrap) wrap.style.display = type==='salary' ? 'grid' : 'block';
-  if(type==='salary' && desc && (force || !desc.value.trim() || desc.value.startsWith('Nómina de Henkel'))){
-    desc.value = `Nómina de Henkel ${workplace}`;
-  }
 }
 
 // ================================================
@@ -1665,7 +1597,7 @@ async function saveGasto(){
   closeModal('modalGasto');
   document.getElementById('g-amount').value='';
   document.getElementById('g-desc').value='';
-  notifyDataChanged();
+  renderAll();
   showToast('✅ Gasto registrado/actualizado');
 }
 
@@ -1678,15 +1610,41 @@ async function saveIngreso(){
   const amountMXN = currency==='MXN'?amount:amount*state.exchangeRate;
   const amountEUR = currency==='EUR'?amount:amount/state.exchangeRate;
   const editIdI = document.getElementById('modalIngreso').dataset.editId;
-  const recI = {amount,currency,amountMXN,amountEUR,exchangeRateUsed:state.exchangeRate,type:document.getElementById('i-type').value,workplace:document.getElementById('i-workplace')?.value||'',description:document.getElementById('i-desc').value,recurrence:document.getElementById('i-recurrence').value,date,month};
+  const saveAsSavings = !!document.getElementById('i-save-as-savings')?.checked;
+  const selectedGoalId = document.getElementById('i-savings-goal')?.value || null;
+
+  let previous = null;
+  if(editIdI){
+    previous = await db.incomes.get(parseInt(editIdI));
+    await undoIncomeSavingsDeposit(previous);
+  }
+
+  const recI = {
+    amount,currency,amountMXN,amountEUR,exchangeRateUsed:state.exchangeRate,
+    type:document.getElementById('i-type').value,
+    workplace:document.getElementById('i-workplace')?.value||'',
+    description:document.getElementById('i-desc').value,
+    recurrence:document.getElementById('i-recurrence').value,date,month,
+    saveAsSavings,
+    linkedSavingsGoalId:null,
+    linkedSavingsTxId:null
+  };
+
+  if(saveAsSavings){
+    const linked = await applyIncomeSavingsDeposit(selectedGoalId, amount, currency, recI.description || 'Ingreso clasificado como ahorro', date);
+    recI.linkedSavingsGoalId = linked.goalId;
+    recI.linkedSavingsTxId = linked.txId;
+  }
+
   if(editIdI){ await db.incomes.update(parseInt(editIdI),recI); delete document.getElementById('modalIngreso').dataset.editId; }
   else await db.incomes.add(recI);
-  if(recI.type==='salary') await ensureSalaryBudget(month);
   closeModal('modalIngreso');
   document.getElementById('i-amount').value='';
   document.getElementById('i-desc').value='';
-  notifyDataChanged();
-  showToast(editIdI ? '✅ Ingreso actualizado' : '✅ Ingreso registrado');
+  document.getElementById('i-save-as-savings').checked=false;
+  toggleIncomeSavingsSelect();
+  renderAll();
+  showToast(saveAsSavings ? '✅ Ingreso registrado y enviado a ahorro' : (editIdI ? '✅ Ingreso actualizado' : '✅ Ingreso registrado'));
 }
 
 async function saveMeta(){
@@ -1703,7 +1661,7 @@ async function saveMeta(){
   if(editId){ await db.savingsGoals.update(parseInt(editId),rec); delete document.getElementById('modalMeta').dataset.editId; }
   else await db.savingsGoals.add(rec);
   closeModal('modalMeta');
-  notifyDataChanged();
+  renderAll();
   showToast(editId ? '✅ Meta actualizada' : '✅ Meta creada');
 }
 
@@ -1732,12 +1690,11 @@ async function saveBudget(){
   const currency = document.getElementById('b-currency').value;
   const month = state.currentMonth;
   const existing = await db.budgets.where({month,categoryId:catId}).first();
-  const rec = {plannedAmount:amount,plannedCurrency:currency,isAutoSalary:catId===0};
-  if(existing) await db.budgets.update(existing.id,rec);
-  else await db.budgets.add({month,categoryId:catId,...rec});
+  if(existing) await db.budgets.update(existing.id,{plannedAmount:amount,plannedCurrency:currency});
+  else await db.budgets.add({month,categoryId:catId,plannedAmount:amount,plannedCurrency:currency});
   closeModal('modalPresupuesto');
-  notifyDataChanged();
-  showToast(catId===0?'✅ Budget de nómina guardado':'✅ Presupuesto guardado');
+  renderAll();
+  showToast('✅ Presupuesto guardado');
 }
 
 async function saveEvento(){
@@ -1762,53 +1719,30 @@ async function saveSavingsTx(){
   await db.savingsGoals.update(goalId,{currentAmount:newAmt});
   await db.savingsTransactions.add({goalId,amount:amountInGoalCurrency,currency:goal.targetCurrency,type,reason:document.getElementById('stx-reason').value,date:new Date().toISOString()});
   closeModal('modalSavingsTx');
-  renderSavings();
-  renderDashboard();
+  renderAll();
   showToast(type==='deposit'?'✅ Depósito registrado':'✅ Retiro registrado');
 }
 
 // ================================================
 // RENDER ALL
 // ================================================
-async function renderAll(){
+function renderAll(){
   const active = document.querySelector('.page.active');
   if(!active) return;
   const id = active.id.replace('page-','');
-  // Recalcular siempre los indicadores base para evitar tener que refrescar el navegador.
-  try{ await renderDashboard(); }catch(e){ console.warn('renderDashboard', e); }
-  try{ if(id==='gastos') await renderGastos();
-  else if(id==='ingresos') await renderIngresos();
-  else if(id==='ahorros') await renderSavings();
-  else if(id==='presupuestos') await renderBudgets();
-  else if(id==='mudanza') await renderMudanza();
-  else if(id==='calendario') await renderCalendar();
-  else if(id==='analitica') await renderAnalitica();
+  // call render directly without triggering nav() (avoids closeSidebar etc.)
+  if(id==='dashboard') renderDashboard();
+  else if(id==='gastos') renderGastos();
+  else if(id==='ingresos') renderIngresos();
+  else if(id==='ahorros') renderSavings();
+  else if(id==='presupuestos') renderBudgets();
+  else if(id==='mudanza') renderMudanza();
+  else if(id==='calendario') renderCalendar();
+  else if(id==='analitica') renderAnalitica();
   else if(id==='simulador') initSimulator();
-  else if(id==='mxes') await renderMxEs();
-  else if(id==='configuracion'){updateRateBadge(); await renderRateHistory();}
-  }catch(e){ console.error('renderAll active page', e); }
+  else if(id==='mxes') renderMxEs();
+  else if(id==='configuracion'){updateRateBadge();renderRateHistory();}
 }
-
-let __refreshTimer=null;
-function scheduleRenderAll(){
-  clearTimeout(__refreshTimer);
-  __refreshTimer=setTimeout(()=>renderAll(),60);
-}
-
-function notifyDataChanged(){
-  scheduleRenderAll();
-  try{ localStorage.setItem('mf_last_change', String(Date.now())); }catch(e){}
-  try{ if(window.mfChannel) window.mfChannel.postMessage({type:'dataChanged', t:Date.now()}); }catch(e){}
-}
-
-try{
-  window.mfChannel = new BroadcastChannel('misfinanzas-hugo');
-  window.mfChannel.onmessage = (ev)=>{ if(ev.data?.type==='dataChanged') scheduleRenderAll(); };
-}catch(e){}
-window.addEventListener('storage', (ev)=>{ if(ev.key==='mf_last_change') scheduleRenderAll(); });
-window.addEventListener('focus', scheduleRenderAll);
-window.addEventListener('pageshow', scheduleRenderAll);
-document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) scheduleRenderAll(); });
 
 
 function calcSavingsTotalMXN(goals){
@@ -1841,14 +1775,14 @@ async function saveSavingsTotalOverride(){
   state.savingsTotalOverride = {enabled,amount,currency};
   await db.settings.put({key:'savingsTotalOverride',value:state.savingsTotalOverride});
   closeModal('modalSavingsTotal');
-  notifyDataChanged();
+  renderAll();
   showToast('✅ Ahorro acumulado actualizado');
 }
 async function clearSavingsTotalOverride(){
   state.savingsTotalOverride = {enabled:false,amount:0,currency:state.currency};
   await db.settings.put({key:'savingsTotalOverride',value:state.savingsTotalOverride});
   closeModal('modalSavingsTotal');
-  notifyDataChanged();
+  renderAll();
   showToast('✅ Usando ahorro calculado desde metas');
 }
 async function calcCarryoverBeforeMonth(month){
@@ -1889,37 +1823,26 @@ async function renderDashboard(){
   const balance = dispInc - dispExp;
 
   // Budgets
-  await ensureSalaryBudget(month);
   const budgets = await db.budgets.where('month').equals(month).toArray();
   const totalBudMXN = budgets.reduce((s,b)=>{
     const amtMXN = b.plannedCurrency==='EUR'?b.plannedAmount*state.exchangeRate:b.plannedAmount;
     return s+amtMXN;
   },0);
-  const monthlyBudgetBalance = convertToDisplay(totalBudMXN-totalExpMXN,'MXN');
-  const accumulatedMXN = await calcHistoricalAccumulatedMXN();
-  const autoSavedMXN = await calcAutoSavedThisMonthMXN(month);
-  const accumulatedDisp = convertToDisplay(accumulatedMXN,'MXN');
+  const remaining = convertToDisplay(totalBudMXN-totalExpMXN,'MXN');
 
-  const accEl = document.getElementById('kpi-accumulated');
-  if(accEl){
-    accEl.textContent = fmt(accumulatedDisp);
-    accEl.style.color = accumulatedDisp>=0?'var(--green)':'var(--red)';
-    document.getElementById('kpi-accumulated-sub').textContent = autoSavedMXN>0 ? `incluye ${fmt(convertToDisplay(autoSavedMXN,'MXN'))} no usado del mes` : 'ingresos históricos − gastos históricos';
-  }
-
-  document.getElementById('kpi-balance').textContent = fmt(monthlyBudgetBalance);
-  document.getElementById('kpi-balance').style.color = monthlyBudgetBalance>=0?'var(--green)':'var(--red)';
-  document.getElementById('kpi-balance-sub').textContent = totalBudMXN>0 ? `${fmt(convertToDisplay(totalBudMXN,'MXN'))} budget − ${fmt(dispExp)} gastos` : `${fmt(dispInc)} ingresos − ${fmt(dispExp)} gastos`;
+  document.getElementById('kpi-balance').textContent = fmt(balance);
+  document.getElementById('kpi-balance').style.color = balance>=0?'var(--green)':'var(--red)';
+  document.getElementById('kpi-balance-sub').textContent = `${fmt(dispInc)} ingresos − ${fmt(dispExp)} gastos`;
 
   document.getElementById('kpi-savings').textContent = fmt(dispSav);
-  document.getElementById('kpi-savings-sub').textContent = state.savingsTotalOverride?.enabled ? 'total manual configurado' : `${goals.length} objetivos activos`;
+  document.getElementById('kpi-savings-sub').textContent = `${goals.length} objetivos / bolsas de ahorro`;
 
-  document.getElementById('kpi-budget').textContent = fmt(monthlyBudgetBalance);
-  document.getElementById('kpi-budget').style.color = monthlyBudgetBalance>=0?'var(--green)':'var(--red)';
+  document.getElementById('kpi-budget').textContent = fmt(remaining);
+  document.getElementById('kpi-budget').style.color = remaining>=0?'var(--green)':'var(--red)';
   document.getElementById('kpi-budget-sub').textContent = totalBudMXN>0?`de ${fmt(convertToDisplay(totalBudMXN,'MXN'))} presupuestado`:'Sin presupuesto definido';
 
   // Score
-  const incomeBase = state.currency==='MXN'?(state.profile?.incomeMXN||0):(state.profile?.incomeEUR||0)*state.exchangeRate;
+  const incomeBase = state.currency==='MXN'?state.profile?.incomeMXN||22043.80:(state.profile?.incomeEUR||2303)*state.exchangeRate;
   const savingsRate = totalIncMXN>0?(totalSavMXN/12/totalIncMXN)*100:0; // rough
   let score = 0;
   if(totalIncMXN>0){const sr=(totalIncMXN-totalExpMXN)/totalIncMXN*100; if(sr>=20)score+=25; else if(sr>=10)score+=15; else if(sr>0)score+=5;}
@@ -2036,14 +1959,14 @@ function prevMonth(){
   const newM = m === 1 ? 12 : m - 1;
   const newY = m === 1 ? y - 1 : y;
   state.currentMonth = `${newY}-${String(newM).padStart(2,'0')}`;
-  notifyDataChanged();
+  renderAll();
 }
 function nextMonth(){
   const [y,m] = state.currentMonth.split('-').map(Number);
   const newM = m === 12 ? 1 : m + 1;
   const newY = m === 12 ? y + 1 : y;
   state.currentMonth = `${newY}-${String(newM).padStart(2,'0')}`;
-  notifyDataChanged();
+  renderAll();
 }
 
 async function renderGastos(){
@@ -2104,7 +2027,7 @@ async function editExpenseRow(id){
 async function deleteExpense(id){
   if(!confirm('¿Eliminar este gasto?')) return;
   await db.expenses.delete(id);
-  notifyDataChanged();
+  renderAll();
   showToast('🗑️ Gasto eliminado');
 }
 
@@ -2124,25 +2047,36 @@ async function renderIngresos(){
   const typeLabels = {salary:'Nómina',bonus:'Bono',extra:'Ingreso extra',reimbursement:'Reembolso',other:'Otro'};
   const table = document.getElementById('ingresos-table');
   if(!incomes.length){ table.innerHTML='<div class="empty"><div class="empty-icon">💰</div><div class="empty-title">Sin ingresos</div><div class="empty-sub">Registra tu primer ingreso del mes</div></div>'; return; }
-  const rowsHtml = incomes.map(i=>`<tr onclick="editIncomeRow(${i.id})" style="cursor:pointer"><td style="color:var(--text3);font-size:12px">${new Date(i.date+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short'})}</td><td><span style="font-weight:500">${i.description||typeLabels[i.type]}</span></td><td><span class="badge badge-green">${typeLabels[i.type]}</span></td><td class="tr-amount" style="text-align:right;color:var(--green)">+${fmt(convertToDisplay(i.amountMXN,'MXN'))}</td><td style="text-align:right;white-space:nowrap"><button class="btn btn-ghost btn-sm btn-icon" onclick="event.stopPropagation();editIncomeRow(${i.id})" style="margin-right:4px">✏️</button><button class="btn btn-ghost btn-sm btn-icon" onclick="event.stopPropagation();deleteIncome(${i.id})">🗑</button></td></tr>`).join('');
-  const cardsHtml = incomes.map(i=>`<div class="record-card" onclick="editIncomeRow(${i.id})"><div class="record-main"><div><div class="record-title">${i.description||typeLabels[i.type]}</div><div class="record-sub">${new Date(i.date+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short'})} · ${typeLabels[i.type]}${i.workplace?' · '+i.workplace:''}</div></div><div class="record-amount" style="color:var(--green)">+${fmt(convertToDisplay(i.amountMXN,'MXN'))}</div></div><div class="record-actions"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editIncomeRow(${i.id})">✏️ Editar</button><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteIncome(${i.id})">🗑 Borrar</button></div></div>`).join('');
+  const rowsHtml = incomes.map(i=>`<tr onclick="editIncomeRow(${i.id})" style="cursor:pointer"><td style="color:var(--text3);font-size:12px">${new Date(i.date+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short'})}</td><td><span style="font-weight:500">${i.description||typeLabels[i.type]}</span>${i.saveAsSavings?' <span class="badge badge-blue" style="margin-left:6px">Ahorrado</span>':''}</td><td><span class="badge badge-green">${typeLabels[i.type]}</span></td><td class="tr-amount" style="text-align:right;color:var(--green)">+${fmt(convertToDisplay(i.amountMXN,'MXN'))}</td><td style="text-align:right;white-space:nowrap"><button class="btn btn-ghost btn-sm btn-icon" onclick="event.stopPropagation();editIncomeRow(${i.id})" style="margin-right:4px">✏️</button><button class="btn btn-ghost btn-sm btn-icon" onclick="event.stopPropagation();deleteIncome(${i.id})">🗑</button></td></tr>`).join('');
+  const cardsHtml = incomes.map(i=>`<div class="record-card" onclick="editIncomeRow(${i.id})"><div class="record-main"><div><div class="record-title">${i.description||typeLabels[i.type]}</div><div class="record-sub">${new Date(i.date+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short'})} · ${typeLabels[i.type]}${i.saveAsSavings?' · Ahorrado':''}</div></div><div class="record-amount" style="color:var(--green)">+${fmt(convertToDisplay(i.amountMXN,'MXN'))}</div></div><div class="record-actions"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editIncomeRow(${i.id})">✏️ Editar</button><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteIncome(${i.id})">🗑 Borrar</button></div></div>`).join('');
   table.innerHTML=`${cardsHtml}<table><thead><tr><th>Fecha</th><th>Descripción</th><th>Tipo</th><th style="text-align:right">Monto</th><th style="text-align:right">Acciones</th></tr></thead><tbody>${rowsHtml}</tbody></table>`;
 }
 async function editIncomeRow(id){
   const i = await db.incomes.get(id);
   if(!i) return;
+  await populateIncomeSavingsGoalSelect();
   document.getElementById('i-amount').value = i.amount;
   document.getElementById('i-currency').value = i.currency;
   document.getElementById('i-type').value = i.type;
-  if(document.getElementById('i-workplace')) document.getElementById('i-workplace').value = i.workplace || (String(i.description||'').toLowerCase().includes('barcelona')?'Barcelona':'Toluca');
+  if(document.getElementById('i-workplace')) document.getElementById('i-workplace').value = i.workplace||'Toluca';
   document.getElementById('i-desc').value = i.description||'';
   document.getElementById('i-date').value = i.date;
   document.getElementById('i-recurrence').value = i.recurrence||'once';
+  const chk = document.getElementById('i-save-as-savings');
+  if(chk){ chk.checked = !!i.saveAsSavings; toggleIncomeSavingsSelect(); }
+  if(i.linkedSavingsGoalId && document.getElementById('i-savings-goal')) document.getElementById('i-savings-goal').value = i.linkedSavingsGoalId;
   document.getElementById('modalIngreso').dataset.editId = id;
   document.querySelector('#modalIngreso .modal-title').textContent = '✏️ Editar ingreso';
   document.getElementById('modalIngreso').classList.add('open');
 }
-async function deleteIncome(id){ if(!confirm('¿Eliminar?'))return; await db.incomes.delete(id); notifyDataChanged(); showToast('🗑️ Ingreso eliminado'); }
+async function deleteIncome(id){
+  if(!confirm('¿Eliminar?'))return;
+  const income = await db.incomes.get(id);
+  await undoIncomeSavingsDeposit(income);
+  await db.incomes.delete(id);
+  renderAll();
+  showToast('🗑️ Ingreso eliminado');
+}
 
 // ================================================
 // AHORROS
@@ -2153,7 +2087,7 @@ async function renderSavings(){
   const monthlyMXN = goals.reduce((s,g)=>s+(g.monthlyContribution*(g.targetCurrency==='EUR'?state.exchangeRate:1)),0);
   document.getElementById('savings-total').textContent = fmt(convertToDisplay(totalMXN,'MXN'));
   const savingsTotalSub = document.getElementById('savings-total-sub');
-  if(savingsTotalSub) savingsTotalSub.textContent = state.savingsTotalOverride?.enabled ? 'total manual configurado' : 'calculado desde tus metas';
+  if(savingsTotalSub) savingsTotalSub.textContent = 'calculado desde tus metas y depósitos';
   document.getElementById('savings-monthly').textContent = fmt(convertToDisplay(monthlyMXN,'MXN'));
   document.getElementById('savings-projection').textContent = fmt(convertToDisplay(totalMXN+monthlyMXN*12,'MXN'));
 
@@ -2216,16 +2150,14 @@ async function editGoal(id){
   document.querySelector('#modalMeta .modal-title').textContent = '✏️ Editar meta de ahorro';
   document.getElementById('modalMeta').classList.add('open');
 }
-async function deleteGoal(id){ if(!confirm('¿Eliminar esta meta?'))return; await db.savingsGoals.delete(id); notifyDataChanged(); showToast('🗑️ Meta eliminada'); }
+async function deleteGoal(id){ if(!confirm('¿Eliminar esta meta?'))return; await db.savingsGoals.delete(id); renderAll(); showToast('🗑️ Meta eliminada'); }
 
 // ================================================
 // PRESUPUESTOS
 // ================================================
 async function renderBudgets(){
   document.getElementById('currentMonthDisplayPresupuesto').textContent = monthLabel(state.currentMonth);
-  await ensureSalaryBudget(state.currentMonth);
-  const realCats = await db.categories.toArray();
-  const cats = [{id:0,name:'Nómina del mes',icon:'💼',color:'#22c55e'}, ...realCats];
+  const cats = await db.categories.toArray();
   const budgets = await db.budgets.where('month').equals(state.currentMonth).toArray();
   const expenses = await db.expenses.where('month').equals(state.currentMonth).toArray();
   const budMap = Object.fromEntries(budgets.map(b=>[b.categoryId,b]));
@@ -2297,16 +2229,14 @@ async function editBudgetRow(catId){
     document.getElementById('b-currency').value = 'MXN';
   }
   openModal('modalPresupuesto');
-  setTimeout(handleBudgetCategoryChange,0);
 }
-
 
 async function deleteBudgetRow(catId){
   const existing = await db.budgets.where({month:state.currentMonth,categoryId:catId}).first();
   if(!existing){ showToast('No hay presupuesto para borrar'); return; }
   if(!confirm('¿Eliminar este presupuesto?')) return;
   await db.budgets.delete(existing.id);
-  notifyDataChanged();
+  renderAll();
   showToast('🗑️ Presupuesto eliminado');
 }
 
@@ -2641,7 +2571,7 @@ async function saveProfile(){
   const profile = {id:1,name:document.getElementById('cfg-nombre').value,currentCity:document.getElementById('cfg-ciudad').value,destinationCity:document.getElementById('cfg-destino').value,movingDate:document.getElementById('cfg-mudanza').value,incomeMXN:parseFloat(document.getElementById('cfg-income-mxn').value)||22043.80,incomeEUR:parseFloat(document.getElementById('cfg-income-eur').value)||2303,primaryCurrency:state.currency};
   await db.profile.put(profile);
   state.profile = profile;
-  notifyDataChanged();
+  renderAll();
   showToast('✅ Perfil guardado');
 }
 
@@ -2781,7 +2711,7 @@ async function importData(event){
     if(data.budgets) await db.budgets.bulkPut(data.budgets);
     if(data.relocationItems) await db.relocationItems.bulkPut(data.relocationItems);
     if(data.scheduledEvents) await db.scheduledEvents.bulkPut(data.scheduledEvents);
-    notifyDataChanged();
+    renderAll();
     showToast('✅ Datos importados correctamente');
   } catch(e){
     showToast('⚠️ Error al importar. El archivo puede estar corrupto.');
@@ -2802,7 +2732,7 @@ async function clearAllData(){
   await seedRelocItems();
   await seedSavings();
   await seedDemoIncome();
-  notifyDataChanged();
+  renderAll();
   showToast('🗑️ Datos eliminados. Se cargaron datos de ejemplo.');
 }
 
@@ -2838,15 +2768,6 @@ document.querySelectorAll('.modal-overlay').forEach(overlay=>{
 // ================================================
 // START
 // ================================================
-
-// Recalcula al cerrar modales, cambiar pestaña o volver desde iPhone PWA.
-document.addEventListener('input', (ev)=>{
-  if(ev.target && ev.target.matches('input, select, textarea')){
-    // No guardamos automáticamente; solo refrescamos cálculos visuales de simuladores/formularios activos.
-    if(['sim-income','sim-expense','sim-extra','sim-rate'].includes(ev.target.id)) return;
-  }
-});
-
 init().catch(console.error);
 </script>
 </body>
