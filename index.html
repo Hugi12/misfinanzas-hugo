@@ -833,6 +833,16 @@ button,.card,.savings-card{touch-action:manipulation;}
         <option value="EUR">EUR</option>
       </select>
     </div>
+    <div class="form-group">
+      <label class="form-label">Predictivo Barcelona 2026 (opcional)</label>
+      <div class="input-group">
+        <select class="form-input" id="g-barcelona-preset" onchange="previewBarcelonaEstimate()">
+          <option value="">Selecciona una referencia reciente...</option>
+        </select>
+        <button class="btn btn-ghost" type="button" onclick="applyBarcelonaEstimate()" style="border-radius:0 var(--r-sm) var(--r-sm) 0;white-space:nowrap;">Usar</button>
+      </div>
+      <div class="card-sub" id="g-barcelona-note">Te ayuda a precargar un monto estimado; luego puedes ajustar el gasto real.</div>
+    </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Categoría</label>
         <select class="form-input" id="g-category" onchange="updateSubcats()"></select>
@@ -884,7 +894,7 @@ button,.card,.savings-card{touch-action:manipulation;}
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Tipo</label>
-        <select class="form-input" id="i-type">
+        <select class="form-input" id="i-type" onchange="handleIncomeTypeChange()">
           <option value="salary">Nómina / Salario</option>
           <option value="bonus">Bono</option>
           <option value="extra">Ingreso extra</option>
@@ -894,7 +904,15 @@ button,.card,.savings-card{touch-action:manipulation;}
       </div>
       <div class="form-group"><label class="form-label">Fecha</label><input class="form-input" type="date" id="i-date"></div>
     </div>
-    <div class="form-group"><label class="form-label">Descripción</label><input class="form-input" id="i-desc" placeholder="ej. Nómina Henkel junio"></div>
+    <div class="form-row" id="i-workplace-wrap">
+      <div class="form-group"><label class="form-label">Centro Henkel</label>
+        <select class="form-input" id="i-workplace" onchange="handleIncomeTypeChange(true)">
+          <option value="Toluca">Toluca</option>
+          <option value="Barcelona">Barcelona</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Descripción automática</label><input class="form-input" id="i-desc" placeholder="ej. Nómina de Henkel Toluca"></div>
+    </div>
     <div class="form-group"><label class="form-label">Recurrencia</label>
       <select class="form-input" id="i-recurrence">
         <option value="once">Única vez</option>
@@ -1195,15 +1213,15 @@ async function init(){
   state.profile = await db.profile.get(1);
   if(!state.profile){
     const movingDate = new Date('2026-08-01');
-    state.profile = {id:1,name:'Hugo Nathaniel Castillo González',currentCity:'Toluca, México',destinationCity:'España',movingDate:movingDate.toISOString().slice(0,10),incomeMXN:22043.80,incomeEUR:2303,primaryCurrency:'MXN'};
+    state.profile = {id:1,name:'Hugo Nathaniel Castillo González',currentCity:'Toluca, México',destinationCity:'Barcelona, España',movingDate:movingDate.toISOString().slice(0,10),incomeMXN:0,incomeEUR:0,primaryCurrency:'MXN'};
     await db.profile.put(state.profile);
   }
   document.getElementById('cfg-mudanza').value = state.profile.movingDate || '';
   document.getElementById('cfg-nombre').value = state.profile.name || '';
   document.getElementById('cfg-ciudad').value = state.profile.currentCity || '';
   document.getElementById('cfg-destino').value = state.profile.destinationCity || '';
-  document.getElementById('cfg-income-mxn').value = state.profile.incomeMXN || 22043.80;
-  document.getElementById('cfg-income-eur').value = state.profile.incomeEUR || 2303;
+  document.getElementById('cfg-income-mxn').value = state.profile.incomeMXN || 0;
+  document.getElementById('cfg-income-eur').value = state.profile.incomeEUR || 0;
 
   // Load API Key
   const keyRecord = await db.settings.get('apiKey');
@@ -1212,6 +1230,8 @@ async function init(){
   const savingsOverride = await db.settings.get('savingsTotalOverride');
   if(savingsOverride) state.savingsTotalOverride = savingsOverride.value;
 
+  await cleanupDemoFinancialData();
+
   // Load exchange rate
   await fetchRate(true);
 
@@ -1219,17 +1239,28 @@ async function init(){
   const relocCount = await db.relocationItems.count();
   if(relocCount === 0) await seedRelocItems();
 
-  // Seed demo savings if empty
-  const savingsCount = await db.savingsGoals.count();
-  if(savingsCount === 0) await seedSavings();
-
-  // Seed demo income if empty
-  const incomeCount = await db.incomes.count();
-  if(incomeCount === 0) await seedDemoIncome();
+  // Datos financieros: arranque limpio en 0. No se crean ingresos, gastos, metas ni presupuestos demo.
 
   renderAll();
   updateCountdown();
   setInterval(updateCountdown, 60000);
+}
+
+
+async function cleanupDemoFinancialData(){
+  const applied = await db.settings.get('cleanStartV3Applied');
+  if(applied) return;
+  const demoIncome = await db.incomes.filter(i=>i.description==='Nómina Henkel Toluca' && Number(i.amountMXN)===22043.80).toArray();
+  for(const i of demoIncome) await db.incomes.delete(i.id);
+  const demoNames = ['Fondo de Emergencia','Mudanza a España','Fondo Viajes'];
+  const demoGoals = await db.savingsGoals.filter(g=>demoNames.includes(g.name) && [18000,42000,5000].includes(Number(g.currentAmount))).toArray();
+  for(const g of demoGoals) await db.savingsGoals.delete(g.id);
+  const ov = await db.settings.get('savingsTotalOverride');
+  if(ov?.value?.amount && Number(ov.value.amount)>0 && demoGoals.length){
+    state.savingsTotalOverride = {enabled:false,amount:0,currency:'MXN'};
+    await db.settings.put({key:'savingsTotalOverride',value:state.savingsTotalOverride});
+  }
+  await db.settings.put({key:'cleanStartV3Applied',value:true});
 }
 
 async function seedDemoIncome(){
@@ -1433,8 +1464,10 @@ async function openModal(id){
     document.getElementById('g-date').value = new Date().toISOString().slice(0,10);
     await populateCatSelect('g-category');
     await populateSavingsGoalSelect();
+    await populateBarcelonaEstimates();
+    const preset=document.getElementById('g-barcelona-preset'); if(preset) preset.value=''; previewBarcelonaEstimate();
   }
-  if(id==='modalIngreso') document.getElementById('i-date').value = new Date().toISOString().slice(0,10);
+  if(id==='modalIngreso'){ document.getElementById('i-date').value = new Date().toISOString().slice(0,10); handleIncomeTypeChange(true); }
   if(id==='modalPresupuesto') await populateCatSelect('b-category');
   if(id==='modalEvento') document.getElementById('ev-date').value = new Date().toISOString().slice(0,10);
   if(id==='modalMeta'){
@@ -1488,6 +1521,62 @@ function toggleSavingsSelect(){
   document.getElementById('savings-select-wrap').style.display = checked ? 'block' : 'none';
 }
 
+
+// ================================================
+// PREDICTIVO BARCELONA 2026 / INGRESOS
+// ================================================
+const BARCELONA_2026_ESTIMATES = [
+  {key:'rent_room', label:'Renta habitación / piso compartido', amount:650, currency:'EUR', category:'Vivienda/Renta', desc:'Renta estimada Barcelona', note:'Referencia conservadora para habitación o piso compartido; ajusta con tu contrato real.'},
+  {key:'rent_flat', label:'Renta piso 1 habitación', amount:1000, currency:'EUR', category:'Vivienda/Renta', desc:'Renta estimada Barcelona', note:'Rango típico alto en Barcelona: puede variar mucho por zona y contrato.'},
+  {key:'utilities', label:'Servicios: luz, gas, agua, basura', amount:125, currency:'EUR', category:'Servicios', desc:'Servicios básicos Barcelona', note:'Estimado medio mensual para piso normal; puede subir con calefacción/AC.'},
+  {key:'internet', label:'Internet fibra hogar', amount:35, currency:'EUR', category:'Internet/Telefonía', desc:'Internet fibra Barcelona', note:'Rango común de fibra: aprox. 25–50 EUR/mes.'},
+  {key:'mobile', label:'Telefonía móvil', amount:20, currency:'EUR', category:'Internet/Telefonía', desc:'Plan móvil España', note:'Estimado para plan móvil básico/medio.'},
+  {key:'groceries', label:'Supermercado persona sola', amount:250, currency:'EUR', category:'Supermercado', desc:'Supermercado Barcelona', note:'Referencia mensual para una persona: aprox. 200–300 EUR.'},
+  {key:'transport', label:'Transporte público T-Usual 1 zona', amount:22.80, currency:'EUR', category:'Transporte', desc:'Transporte público Barcelona', note:'Referencia 2026 para T-Usual 1 zona con bonificación.'},
+  {key:'gym', label:'Gimnasio', amount:40, currency:'EUR', category:'Gimnasio', desc:'Gimnasio Barcelona', note:'Estimado mensual para gimnasio estándar.'},
+  {key:'restaurants', label:'Restaurantes / salidas', amount:160, currency:'EUR', category:'Restaurantes', desc:'Restaurantes Barcelona', note:'Predictivo editable para salidas moderadas.'},
+  {key:'subscriptions', label:'Suscripciones', amount:20, currency:'EUR', category:'Suscripciones', desc:'Suscripciones digitales', note:'Netflix, Spotify, iCloud u otros servicios.'},
+  {key:'health', label:'Seguro / salud extra', amount:60, currency:'EUR', category:'Salud', desc:'Salud / seguro extra', note:'Estimado preventivo si tienes cobertura privada o gastos no cubiertos.'},
+  {key:'leisure', label:'Ocio / entretenimiento', amount:120, currency:'EUR', category:'Ocio/Entretenimiento', desc:'Ocio Barcelona', note:'Estimado flexible para cine, planes y actividades.'}
+];
+
+async function populateBarcelonaEstimates(){
+  const sel = document.getElementById('g-barcelona-preset');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">Selecciona una referencia reciente...</option>' + BARCELONA_2026_ESTIMATES.map(e=>`<option value="${e.key}">${e.label} — ${fmt(e.amount,e.currency)}</option>`).join('');
+}
+function getBarcelonaEstimate(){
+  const key = document.getElementById('g-barcelona-preset')?.value;
+  return BARCELONA_2026_ESTIMATES.find(e=>e.key===key);
+}
+function previewBarcelonaEstimate(){
+  const e = getBarcelonaEstimate();
+  const note = document.getElementById('g-barcelona-note');
+  if(note) note.textContent = e ? `${e.note} Monto editable: ${fmt(e.amount,e.currency)}.` : 'Te ayuda a precargar un monto estimado; luego puedes ajustar el gasto real.';
+}
+async function applyBarcelonaEstimate(){
+  const e = getBarcelonaEstimate();
+  if(!e){ showToast('Selecciona una referencia primero'); return; }
+  document.getElementById('g-amount').value = e.amount;
+  document.getElementById('g-currency').value = e.currency;
+  document.getElementById('g-desc').value = e.desc;
+  const cats = await db.categories.toArray();
+  const cat = cats.find(c=>c.name===e.category);
+  if(cat) document.getElementById('g-category').value = cat.id;
+  previewBarcelonaEstimate();
+  showToast('✅ Predictivo aplicado; ajusta el monto si lo necesitas');
+}
+function handleIncomeTypeChange(force=false){
+  const type = document.getElementById('i-type')?.value;
+  const wrap = document.getElementById('i-workplace-wrap');
+  const workplace = document.getElementById('i-workplace')?.value || 'Toluca';
+  const desc = document.getElementById('i-desc');
+  if(wrap) wrap.style.display = type==='salary' ? 'grid' : 'block';
+  if(type==='salary' && desc && (force || !desc.value.trim() || desc.value.startsWith('Nómina de Henkel'))){
+    desc.value = `Nómina de Henkel ${workplace}`;
+  }
+}
+
 // ================================================
 // SAVE FUNCTIONS
 // ================================================
@@ -1535,7 +1624,7 @@ async function saveIngreso(){
   const amountMXN = currency==='MXN'?amount:amount*state.exchangeRate;
   const amountEUR = currency==='EUR'?amount:amount/state.exchangeRate;
   const editIdI = document.getElementById('modalIngreso').dataset.editId;
-  const recI = {amount,currency,amountMXN,amountEUR,exchangeRateUsed:state.exchangeRate,type:document.getElementById('i-type').value,description:document.getElementById('i-desc').value,recurrence:document.getElementById('i-recurrence').value,date,month};
+  const recI = {amount,currency,amountMXN,amountEUR,exchangeRateUsed:state.exchangeRate,type:document.getElementById('i-type').value,workplace:document.getElementById('i-workplace')?.value||'',description:document.getElementById('i-desc').value,recurrence:document.getElementById('i-recurrence').value,date,month};
   if(editIdI){ await db.incomes.update(parseInt(editIdI),recI); delete document.getElementById('modalIngreso').dataset.editId; }
   else await db.incomes.add(recI);
   closeModal('modalIngreso');
@@ -1741,7 +1830,7 @@ async function renderDashboard(){
   document.getElementById('kpi-budget-sub').textContent = totalBudMXN>0?`de ${fmt(convertToDisplay(totalBudMXN,'MXN'))} presupuestado`:'Sin presupuesto definido';
 
   // Score
-  const incomeBase = state.currency==='MXN'?state.profile?.incomeMXN||22043.80:(state.profile?.incomeEUR||2303)*state.exchangeRate;
+  const incomeBase = state.currency==='MXN'?(state.profile?.incomeMXN||0):(state.profile?.incomeEUR||0)*state.exchangeRate;
   const savingsRate = totalIncMXN>0?(totalSavMXN/12/totalIncMXN)*100:0; // rough
   let score = 0;
   if(totalIncMXN>0){const sr=(totalIncMXN-totalExpMXN)/totalIncMXN*100; if(sr>=20)score+=25; else if(sr>=10)score+=15; else if(sr>0)score+=5;}
@@ -1947,7 +2036,7 @@ async function renderIngresos(){
   const table = document.getElementById('ingresos-table');
   if(!incomes.length){ table.innerHTML='<div class="empty"><div class="empty-icon">💰</div><div class="empty-title">Sin ingresos</div><div class="empty-sub">Registra tu primer ingreso del mes</div></div>'; return; }
   const rowsHtml = incomes.map(i=>`<tr onclick="editIncomeRow(${i.id})" style="cursor:pointer"><td style="color:var(--text3);font-size:12px">${new Date(i.date+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short'})}</td><td><span style="font-weight:500">${i.description||typeLabels[i.type]}</span></td><td><span class="badge badge-green">${typeLabels[i.type]}</span></td><td class="tr-amount" style="text-align:right;color:var(--green)">+${fmt(convertToDisplay(i.amountMXN,'MXN'))}</td><td style="text-align:right;white-space:nowrap"><button class="btn btn-ghost btn-sm btn-icon" onclick="event.stopPropagation();editIncomeRow(${i.id})" style="margin-right:4px">✏️</button><button class="btn btn-ghost btn-sm btn-icon" onclick="event.stopPropagation();deleteIncome(${i.id})">🗑</button></td></tr>`).join('');
-  const cardsHtml = incomes.map(i=>`<div class="record-card" onclick="editIncomeRow(${i.id})"><div class="record-main"><div><div class="record-title">${i.description||typeLabels[i.type]}</div><div class="record-sub">${new Date(i.date+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short'})} · ${typeLabels[i.type]}</div></div><div class="record-amount" style="color:var(--green)">+${fmt(convertToDisplay(i.amountMXN,'MXN'))}</div></div><div class="record-actions"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editIncomeRow(${i.id})">✏️ Editar</button><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteIncome(${i.id})">🗑 Borrar</button></div></div>`).join('');
+  const cardsHtml = incomes.map(i=>`<div class="record-card" onclick="editIncomeRow(${i.id})"><div class="record-main"><div><div class="record-title">${i.description||typeLabels[i.type]}</div><div class="record-sub">${new Date(i.date+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short'})} · ${typeLabels[i.type]}${i.workplace?' · '+i.workplace:''}</div></div><div class="record-amount" style="color:var(--green)">+${fmt(convertToDisplay(i.amountMXN,'MXN'))}</div></div><div class="record-actions"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editIncomeRow(${i.id})">✏️ Editar</button><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteIncome(${i.id})">🗑 Borrar</button></div></div>`).join('');
   table.innerHTML=`${cardsHtml}<table><thead><tr><th>Fecha</th><th>Descripción</th><th>Tipo</th><th style="text-align:right">Monto</th><th style="text-align:right">Acciones</th></tr></thead><tbody>${rowsHtml}</tbody></table>`;
 }
 async function editIncomeRow(id){
@@ -1956,6 +2045,7 @@ async function editIncomeRow(id){
   document.getElementById('i-amount').value = i.amount;
   document.getElementById('i-currency').value = i.currency;
   document.getElementById('i-type').value = i.type;
+  if(document.getElementById('i-workplace')) document.getElementById('i-workplace').value = i.workplace || (String(i.description||'').toLowerCase().includes('barcelona')?'Barcelona':'Toluca');
   document.getElementById('i-desc').value = i.description||'';
   document.getElementById('i-date').value = i.date;
   document.getElementById('i-recurrence').value = i.recurrence||'once';
