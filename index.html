@@ -10,7 +10,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23E1000F'/><text y='.9em' font-size='70' x='15'>💰</text></svg>">
 <link rel="manifest" href="data:application/json,%7B%22name%22%3A%22MisFinanzas%22%2C%22short_name%22%3A%22Finanzas%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230a0a0f%22%2C%22theme_color%22%3A%22%23E1000F%22%7D">
-<title>MisFinanzas — Hugo Castillo v8</title>
+<title>MisFinanzas — Hugo Castillo v9</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
@@ -222,9 +222,9 @@ tr:hover td{background:var(--surface2);}
 .sim-slider{width:100%;accent-color:var(--red);}
 
 /* COPILOT */
-#copilot-btn{position:fixed;bottom:24px;right:24px;width:52px;height:52px;border-radius:50%;background:var(--red);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;box-shadow:0 4px 20px rgba(225,0,15,.4);transition:var(--transition);z-index:50;}
+#copilot-btn{width:34px;height:34px;border-radius:50%;background:var(--red);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;color:#fff;box-shadow:0 2px 10px rgba(225,0,15,.35);transition:var(--transition);z-index:12;flex-shrink:0;}
 #copilot-btn:hover{transform:scale(1.08);}
-#copilot-panel{position:fixed;bottom:88px;right:24px;width:360px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);z-index:50;display:flex;flex-direction:column;box-shadow:var(--shadow);transform:translateY(20px) scale(.95);opacity:0;pointer-events:none;transition:all .25s cubic-bezier(.4,0,.2,1);max-height:500px;}
+#copilot-panel{position:fixed;bottom:calc(76px + env(safe-area-inset-bottom));right:18px;width:360px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);z-index:50;display:flex;flex-direction:column;box-shadow:var(--shadow);transform:translateY(20px) scale(.95);opacity:0;pointer-events:none;transition:all .25s cubic-bezier(.4,0,.2,1);max-height:500px;}
 #copilot-panel.open{opacity:1;pointer-events:all;transform:translateY(0) scale(1);}
 .copilot-head{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
 .copilot-avatar{width:32px;height:32px;background:var(--red);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;}
@@ -325,7 +325,8 @@ button,.card,.savings-card{touch-action:manipulation;}
   .grid-2{grid-template-columns:1fr;}
   #content{padding:16px;padding-bottom:calc(24px + env(safe-area-inset-bottom));}
   .form-row,.form-row-3{grid-template-columns:1fr;}
-  #copilot-panel{width:calc(100vw - 32px);right:16px;}
+  #copilot-panel{width:calc(100vw - 32px);right:16px;bottom:calc(70px + env(safe-area-inset-bottom));}
+  #copilot-btn{width:34px;height:34px;border-radius:50%;background:var(--red);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;color:#fff;box-shadow:0 2px 10px rgba(225,0,15,.35);transition:var(--transition);z-index:12;flex-shrink:0;}
   .card-value.lg{font-size:28px;}
   .topbar-title{font-size:13px;}
   #topbar{padding:0 12px;gap:8px;}
@@ -360,7 +361,7 @@ button,.card,.savings-card{touch-action:manipulation;}
     <div class="sidebar-logo-icon">H</div>
     <div>
       <div class="sidebar-logo-text">MisFinanzas</div>
-      <div class="sidebar-logo-sub">Hugo Castillo · v8 estable</div>
+      <div class="sidebar-logo-sub">Hugo Castillo · v9 estable</div>
     </div>
   </div>
   <div class="sidebar-section">Principal</div>
@@ -390,6 +391,7 @@ button,.card,.savings-card{touch-action:manipulation;}
       <button class="ct-btn active" id="btn-mxn" onclick="setCurrency('MXN')">MXN</button>
       <button class="ct-btn" id="btn-eur" onclick="setCurrency('EUR')">EUR</button>
     </div>
+    <button id="copilot-btn" onclick="toggleCopilot()" title="Copiloto IA">🤖</button>
     <div class="rate-badge" onclick="nav('configuracion')" title="Tipo de cambio">
       <div class="rate-dot" id="rateDot"></div>
       <span id="rateLabel">cargando...</span>
@@ -868,11 +870,11 @@ button,.card,.savings-card{touch-action:manipulation;}
     </div>
     <div class="form-group">
       <label class="form-label" style="display:flex;align-items:center;gap:8px;">
-        <input type="checkbox" id="g-from-savings" onchange="toggleSavingsSelect()"> Viene del ahorro
+        <input type="checkbox" id="g-from-savings" onchange="toggleSavingsSelect()"> Gastar desde una meta de ahorro
       </label>
     </div>
     <div class="form-group" id="savings-select-wrap" style="display:none;">
-      <label class="form-label">Objetivo de ahorro a debitar</label>
+      <label class="form-label">Meta de ahorro a debitar</label>
       <select class="form-input" id="g-savings-goal"></select>
     </div>
     <div class="modal-footer">
@@ -913,11 +915,14 @@ button,.card,.savings-card{touch-action:manipulation;}
           <option value="Barcelona">Barcelona</option>
         </select>
       </div>
-      <div class="form-group"><label class="form-label">Acción rápida</label>
-        <button type="button" class="btn btn-ghost" onclick="document.getElementById('i-save-as-savings').checked=true;toggleIncomeSavingsSelect();populateIncomeSavingsGoalSelect();">Mandar este ingreso a ahorro</button>
+      <div class="form-group"><label class="form-label">Descripción automática</label>
+        <div style="font-size:12px;color:var(--text3);padding:9px 0;">Solo aparece para Nómina o Bono Henkel.</div>
       </div>
     </div>
-    <div class="form-group"><label class="form-label">Descripción</label><input class="form-input" id="i-desc" placeholder="ej. Nómina Henkel junio"></div>
+    <div class="form-group"><label class="form-label">Descripción</label><input class="form-input" id="i-desc" placeholder="ej. Ingreso extra, reembolso, bono..."></div>
+    <div class="form-group">
+      <button type="button" class="btn btn-ghost" onclick="document.getElementById('i-save-as-savings').checked=true;toggleIncomeSavingsSelect();populateIncomeSavingsGoalSelect();">Mandar este ingreso a ahorro / meta</button>
+    </div>
     <div class="form-group"><label class="form-label">Recurrencia</label>
       <select class="form-input" id="i-recurrence">
         <option value="once">Única vez</option>
@@ -929,13 +934,14 @@ button,.card,.savings-card{touch-action:manipulation;}
     </div>
     <div class="form-group">
       <label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-        <input type="checkbox" id="i-save-as-savings" onchange="toggleIncomeSavingsSelect()"> Clasificar este ingreso como ahorro inmediato
+        <input type="checkbox" id="i-save-as-savings" onchange="toggleIncomeSavingsSelect()"> Enviar este ingreso a ahorro o a una meta
       </label>
-      <div style="font-size:11px;color:var(--text3);margin-top:-4px;">Úsalo cuando te llegue un dinerito y quieras mandarlo directo a ahorro.</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:-4px;">Puedes enviarlo a Ahorro libre o directamente a una meta ya creada.</div>
     </div>
     <div class="form-group" id="i-savings-select-wrap" style="display:none;">
-      <label class="form-label">Meta / bolsa de ahorro</label>
+      <label class="form-label">Destino</label>
       <select class="form-input" id="i-savings-goal"></select>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px;">Ahorro libre no crea metas automáticas. Las metas solo se crean manualmente en Ahorros.</div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modalIngreso')">Cancelar</button>
@@ -1110,6 +1116,12 @@ button,.card,.savings-card{touch-action:manipulation;}
       </div>
     </div>
     <div class="form-group"><label class="form-label">Motivo</label><input class="form-input" id="stx-reason" placeholder="ej. Aportación mensual"></div>
+    <div class="form-group" id="stx-from-free-wrap" style="display:none;">
+      <label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="checkbox" id="stx-from-free"> Tomar este depósito desde Ahorro libre
+      </label>
+      <div style="font-size:11px;color:var(--text3);margin-top:-4px;">Si lo activas, se resta del ahorro libre y se mueve a esta meta, sin duplicar el dinero acumulado.</div>
+    </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modalSavingsTx')">Cancelar</button>
       <button class="btn btn-primary" onclick="saveSavingsTx()">💾 Guardar</button>
@@ -1123,7 +1135,7 @@ button,.card,.savings-card{touch-action:manipulation;}
   <div class="modal" style="position:relative;">
     <button class="modal-close" onclick="closeModal('modalSavingsTotal')">✕</button>
     <div class="modal-title">Ahorro acumulado automático</div>
-    <div class="alert alert-blue">El ahorro acumulado ya no se sobreescribe manualmente. Para sumar dinero al ahorro, registra un ingreso y activa “Clasificar este ingreso como ahorro inmediato”.</div>
+    <div class="alert alert-blue">El ahorro acumulado ya no se sobreescribe manualmente. Para sumar dinero al ahorro, registra un ingreso y activa “Enviar este ingreso a ahorro o a una meta”.</div>
     <div class="modal-footer">
       <button class="btn btn-primary" onclick="closeModal('modalSavingsTotal'); openModal('modalIngreso'); setTimeout(()=>{document.getElementById('i-save-as-savings').checked=true; toggleIncomeSavingsSelect(); populateIncomeSavingsGoalSelect();},100);">Registrar ingreso como ahorro</button>
     </div>
@@ -1131,7 +1143,6 @@ button,.card,.savings-card{touch-action:manipulation;}
 </div>
 
 <!-- Copiloto IA -->
-<button id="copilot-btn" onclick="toggleCopilot()" title="Copiloto IA">🤖</button>
 <div id="copilot-panel">
   <div class="copilot-head">
     <div class="copilot-avatar">AI</div>
@@ -1245,13 +1256,7 @@ async function init(){
   const relocCount = await db.relocationItems.count();
   if(relocCount === 0) await seedRelocItems();
 
-  // Seed demo savings if empty
-  const savingsCount = await db.savingsGoals.count();
-  if(savingsCount === 0) await seedSavings();
-
-  // Seed demo income if empty
-  const incomeCount = await db.incomes.count();
-  if(incomeCount === 0) await seedDemoIncome();
+  // v10: no se crean ingresos ni metas demo automáticamente. Todo inicia limpio en 0.
 
   renderAll();
   updateCountdown();
@@ -1481,6 +1486,7 @@ async function openModal(id){
     document.querySelector('#modalIngreso .modal-title').textContent = 'Registrar ingreso';
     const chk=document.getElementById('i-save-as-savings'); if(chk) chk.checked=false;
     toggleIncomeSavingsSelect();
+    handleIncomeTypeChange(false);
   }
   if(id==='modalReloc'){
     delete document.getElementById('modalReloc').dataset.editId;
@@ -1557,24 +1563,26 @@ async function calcAutoSavedThisMonthMXN(month=state.currentMonth){
   return Math.max(0,totalInc-planned);
 }
 
-async function ensureDefaultSavingsGoal(currency='MXN'){
-  let goal = await db.savingsGoals.where('name').equals('Ahorro libre').first();
-  if(!goal){
-    const id = await db.savingsGoals.add({name:'Ahorro libre',icon:'💰',color:'#22c55e',targetAmount:0,targetCurrency:currency,currentAmount:0,monthlyContribution:0,type:'other',targetDate:null,isCompleted:false});
-    goal = await db.savingsGoals.get(id);
-  }
-  return goal;
+
+function toMXN(amount,currency){ return currency==='EUR' ? (Number(amount)||0)*state.exchangeRate : (Number(amount)||0); }
+function fromMXN(amountMXN,currency){ return currency==='EUR' ? (Number(amountMXN)||0)/state.exchangeRate : (Number(amountMXN)||0); }
+async function calcFreeSavingsMXN(){
+  const txs = await db.savingsTransactions.toArray();
+  return txs.filter(t=>t.goalId===null || t.goalId===undefined || t.goalId==='' || t.goalId==='free').reduce((sum,t)=>{
+    const mxn = toMXN(t.amount, t.currency||'MXN');
+    return sum + (t.type==='withdrawal' ? -mxn : mxn);
+  },0);
+}
+async function calcTotalSavingsMXN(goals=null){
+  if(!goals) goals = await db.savingsGoals.toArray();
+  return calcSavingsTotalMXN(goals) + await calcFreeSavingsMXN();
 }
 
 async function populateIncomeSavingsGoalSelect(){
   const sel = document.getElementById('i-savings-goal');
   if(!sel) return;
-  let goals = (await db.savingsGoals.toArray()).filter(g=>!g.isCompleted);
-  if(!goals.length){
-    const g = await ensureDefaultSavingsGoal(document.getElementById('i-currency')?.value||'MXN');
-    goals = [g];
-  }
-  sel.innerHTML = goals.map(g=>`<option value="${g.id}">${g.icon||'🏦'} ${g.name}</option>`).join('');
+  const goals = (await db.savingsGoals.toArray()).filter(g=>!g.isCompleted);
+  sel.innerHTML = `<option value="__free">💰 Ahorro libre / balance de ahorro</option>` + goals.map(g=>`<option value="${g.id}">${g.icon||'🏦'} ${g.name}</option>`).join('');
 }
 
 function toggleIncomeSavingsSelect(){
@@ -1588,19 +1596,31 @@ function handleIncomeTypeChange(force=false){
   const workplace = document.getElementById('i-workplace')?.value || 'Toluca';
   const desc = document.getElementById('i-desc');
   const wrap = document.getElementById('i-workplace-wrap');
-  if(wrap) wrap.style.display = type==='salary' ? 'grid' : 'grid';
-  if(type==='salary' && desc && (force || !desc.value || desc.value.startsWith('Nómina de Henkel'))){
-    desc.value = `Nómina de Henkel ${workplace}`;
-  }
+  const isHenkelIncome = type==='salary' || type==='bonus';
+  if(wrap) wrap.style.display = isHenkelIncome ? 'grid' : 'none';
+  if(!desc) return;
+  const previousAuto = desc.value.startsWith('Nómina de Henkel') || desc.value.startsWith('Bono de Henkel');
+  if(type==='salary' && (force || !desc.value || previousAuto)) desc.value = `Nómina de Henkel ${workplace}`;
+  else if(type==='bonus' && (force || !desc.value || previousAuto)) desc.value = `Bono de Henkel ${workplace}`;
+  else if(!isHenkelIncome && previousAuto) desc.value = '';
 }
 
+
 async function applyIncomeSavingsDeposit(goalId, amount, currency, reason, date){
-  let goal = goalId ? await db.savingsGoals.get(parseInt(goalId)) : null;
-  if(!goal) goal = await ensureDefaultSavingsGoal(currency);
-  const amountInGoalCurrency = currency===goal.targetCurrency ? amount : (goal.targetCurrency==='EUR' ? amount/state.exchangeRate : amount*state.exchangeRate);
+  const txDate = date?new Date(date+'T12:00:00').toISOString():new Date().toISOString();
+  if(!goalId || goalId==='__free'){
+    const txId = await db.savingsTransactions.add({goalId:null,amount:Number(amount)||0,currency,type:'deposit',reason:reason||'Ingreso enviado a ahorro libre',date:txDate,source:'income'});
+    return {txId, goalId:null};
+  }
+  const goal = await db.savingsGoals.get(parseInt(goalId));
+  if(!goal){
+    const txId = await db.savingsTransactions.add({goalId:null,amount:Number(amount)||0,currency,type:'deposit',reason:reason||'Ingreso enviado a ahorro libre',date:txDate,source:'income'});
+    return {txId, goalId:null};
+  }
+  const amountInGoalCurrency = currency===goal.targetCurrency ? Number(amount)||0 : (goal.targetCurrency==='EUR' ? (Number(amount)||0)/state.exchangeRate : (Number(amount)||0)*state.exchangeRate);
   const newAmt = (Number(goal.currentAmount)||0) + amountInGoalCurrency;
   await db.savingsGoals.update(goal.id,{currentAmount:newAmt});
-  const txId = await db.savingsTransactions.add({goalId:goal.id,amount:amountInGoalCurrency,currency:goal.targetCurrency,type:'deposit',reason:reason||'Ingreso clasificado como ahorro',date:date?new Date(date+'T12:00:00').toISOString():new Date().toISOString(),source:'income'});
+  const txId = await db.savingsTransactions.add({goalId:goal.id,amount:amountInGoalCurrency,currency:goal.targetCurrency,type:'deposit',reason:reason||'Ingreso enviado a meta',date:txDate,source:'income'});
   return {txId, goalId:goal.id};
 }
 
@@ -1608,10 +1628,33 @@ async function undoIncomeSavingsDeposit(income){
   if(!income || !income.linkedSavingsTxId) return;
   const tx = await db.savingsTransactions.get(income.linkedSavingsTxId);
   if(tx){
+    if(tx.goalId!==null && tx.goalId!==undefined && tx.goalId!=='' && tx.goalId!=='free'){
+      const goal = await db.savingsGoals.get(tx.goalId);
+      if(goal){
+        const newAmt = Math.max(0,(Number(goal.currentAmount)||0) - (Number(tx.amount)||0));
+        await db.savingsGoals.update(goal.id,{currentAmount:newAmt});
+      }
+    }
+    await db.savingsTransactions.delete(tx.id);
+  }
+}
+
+async function applyExpenseSavingsWithdrawal(goalId, amountMXN, description){
+  const goal = await db.savingsGoals.get(parseInt(goalId));
+  if(!goal) return null;
+  const amountGoalCurrency = goal.targetCurrency==='EUR' ? fromMXN(amountMXN,'EUR') : amountMXN;
+  const newAmt = Math.max(0,(Number(goal.currentAmount)||0)-amountGoalCurrency);
+  await db.savingsGoals.update(goal.id,{currentAmount:newAmt});
+  return await db.savingsTransactions.add({goalId:goal.id,amount:amountGoalCurrency,currency:goal.targetCurrency,type:'withdrawal',reason:'Gasto desde meta: '+(description||'Sin descripción'),date:new Date().toISOString(),source:'expense'});
+}
+
+async function undoExpenseSavingsWithdrawal(expense){
+  if(!expense || !expense.linkedSavingsTxId) return;
+  const tx = await db.savingsTransactions.get(expense.linkedSavingsTxId);
+  if(tx && tx.goalId!==null && tx.goalId!==undefined){
     const goal = await db.savingsGoals.get(tx.goalId);
     if(goal){
-      const newAmt = Math.max(0,(Number(goal.currentAmount)||0) - (Number(tx.amount)||0));
-      await db.savingsGoals.update(goal.id,{currentAmount:newAmt});
+      await db.savingsGoals.update(goal.id,{currentAmount:(Number(goal.currentAmount)||0)+(Number(tx.amount)||0)});
     }
     await db.savingsTransactions.delete(tx.id);
   }
@@ -1637,28 +1680,27 @@ async function saveGasto(){
   const month = date.slice(0,7);
   const amountMXN = currency==='MXN' ? amount : amount*state.exchangeRate;
   const amountEUR = currency==='EUR' ? amount : amount/state.exchangeRate;
-
   const editId = document.getElementById('modalGasto').dataset.editId;
-  const rec = {amount,currency,amountMXN,amountEUR,exchangeRateUsed:state.exchangeRate,categoryId,description:document.getElementById('g-desc').value,date,month,recurrence:document.getElementById('g-recurrence').value,isFromSavings:fromSavings,savingsGoalId};
+  let previous = null;
+  if(editId){
+    previous = await db.expenses.get(parseInt(editId));
+    await undoExpenseSavingsWithdrawal(previous);
+  }
+  const desc = document.getElementById('g-desc').value;
+  const rec = {amount,currency,amountMXN,amountEUR,exchangeRateUsed:state.exchangeRate,categoryId,description:desc,date,month,recurrence:document.getElementById('g-recurrence').value,isFromSavings:fromSavings,savingsGoalId,linkedSavingsTxId:null};
+  if(fromSavings && savingsGoalId){
+    rec.linkedSavingsTxId = await applyExpenseSavingsWithdrawal(savingsGoalId, amountMXN, desc);
+  }
   if(editId){ await db.expenses.update(parseInt(editId),rec); delete document.getElementById('modalGasto').dataset.editId; }
   else await db.expenses.add(rec);
-
-  if(fromSavings && savingsGoalId){
-    const goal = await db.savingsGoals.get(savingsGoalId);
-    if(goal){
-      const deductMXN = amountMXN;
-      const deductCurr = goal.targetCurrency==='EUR' ? amountEUR : deductMXN;
-      const newAmt = Math.max(0, goal.currentAmount - deductCurr);
-      await db.savingsGoals.update(savingsGoalId,{currentAmount:newAmt});
-      await db.savingsTransactions.add({goalId:savingsGoalId,amount:deductCurr,currency:goal.targetCurrency,type:'withdrawal',reason:'Gasto: '+document.getElementById('g-desc').value,date:new Date().toISOString()});
-    }
-  }
 
   closeModal('modalGasto');
   document.getElementById('g-amount').value='';
   document.getElementById('g-desc').value='';
+  document.getElementById('g-from-savings').checked=false;
+  toggleSavingsSelect();
   renderAll();
-  showToast('✅ Gasto registrado/actualizado');
+  showToast(fromSavings ? '✅ Gasto registrado desde meta' : '✅ Gasto registrado/actualizado');
 }
 
 async function saveIngreso(){
@@ -1671,7 +1713,7 @@ async function saveIngreso(){
   const amountEUR = currency==='EUR'?amount:amount/state.exchangeRate;
   const editIdI = document.getElementById('modalIngreso').dataset.editId;
   const saveAsSavings = !!document.getElementById('i-save-as-savings')?.checked;
-  const selectedGoalId = document.getElementById('i-savings-goal')?.value || null;
+  const selectedGoalId = document.getElementById('i-savings-goal')?.value || '__free';
 
   let previous = null;
   if(editIdI){
@@ -1775,13 +1817,21 @@ async function saveSavingsTx(){
   const currency = document.getElementById('stx-currency').value;
   const goal = await db.savingsGoals.get(goalId);
   if(!goal) return;
+  const reason = document.getElementById('stx-reason').value;
   const amountInGoalCurrency = (currency===goal.targetCurrency) ? amount : (goal.targetCurrency==='EUR' ? amount/state.exchangeRate : amount*state.exchangeRate);
-  const newAmt = type==='deposit' ? goal.currentAmount+amountInGoalCurrency : Math.max(0,goal.currentAmount-amountInGoalCurrency);
+  const takeFromFree = type==='deposit' && !!document.getElementById('stx-from-free')?.checked;
+  if(takeFromFree){
+    const freeMXN = await calcFreeSavingsMXN();
+    const amountMXN = toMXN(amount,currency);
+    if(amountMXN > freeMXN + 0.01){ showToast('⚠️ No tienes suficiente ahorro libre'); return; }
+    await db.savingsTransactions.add({goalId:null,amount,currency,type:'withdrawal',reason:reason||`Transferencia a meta: ${goal.name}`,date:new Date().toISOString(),source:'goal-transfer'});
+  }
+  const newAmt = type==='deposit' ? (Number(goal.currentAmount)||0)+amountInGoalCurrency : Math.max(0,(Number(goal.currentAmount)||0)-amountInGoalCurrency);
   await db.savingsGoals.update(goalId,{currentAmount:newAmt});
-  await db.savingsTransactions.add({goalId,amount:amountInGoalCurrency,currency:goal.targetCurrency,type,reason:document.getElementById('stx-reason').value,date:new Date().toISOString()});
+  await db.savingsTransactions.add({goalId,amount:amountInGoalCurrency,currency:goal.targetCurrency,type,reason:reason||'',date:new Date().toISOString(),source:takeFromFree?'goal-transfer':'manual'});
   closeModal('modalSavingsTx');
   renderAll();
-  showToast(type==='deposit'?'✅ Depósito registrado':'✅ Retiro registrado');
+  showToast(type==='deposit'?(takeFromFree?'✅ Movido de ahorro libre a meta':'✅ Depósito registrado'):'✅ Retiro registrado');
 }
 
 // ================================================
@@ -1870,7 +1920,7 @@ async function renderDashboard(){
 
   const totalExpMXN = expenses.reduce((s,e)=>s+e.amountMXN,0);
   const totalIncMXN = incomes.reduce((s,i)=>s+i.amountMXN,0);
-  const totalSavMXN = calcSavingsTotalMXN(goals);
+  const totalSavMXN = await calcTotalSavingsMXN(goals);
 
   const dispExp = convertToDisplay(totalExpMXN,'MXN');
   const dispInc = convertToDisplay(totalIncMXN,'MXN');
@@ -1902,7 +1952,7 @@ async function renderDashboard(){
   document.getElementById('kpi-balance-sub').textContent = totalBudMXN>0 ? `${fmt(convertToDisplay(totalBudMXN,'MXN'))} budget − ${fmt(dispExp)} gastos` : `${fmt(dispInc)} ingresos − ${fmt(dispExp)} gastos`;
 
   document.getElementById('kpi-savings').textContent = fmt(dispSav);
-  document.getElementById('kpi-savings-sub').textContent = `${goals.length} objetivos / bolsas de ahorro`;
+  document.getElementById('kpi-savings-sub').textContent = `${goals.length} metas + ahorro libre`;
 
   document.getElementById('kpi-budget').textContent = fmt(remaining);
   document.getElementById('kpi-budget').style.color = remaining>=0?'var(--green)':'var(--red)';
@@ -2087,12 +2137,15 @@ async function editExpenseRow(id){
   document.getElementById('g-recurrence').value = e.recurrence||'once';
   document.getElementById('g-from-savings').checked = e.isFromSavings||false;
   document.getElementById('savings-select-wrap').style.display = e.isFromSavings?'block':'none';
+  if(e.savingsGoalId && document.getElementById('g-savings-goal')) document.getElementById('g-savings-goal').value = e.savingsGoalId;
   document.getElementById('modalGasto').dataset.editId = id;
   document.querySelector('#modalGasto .modal-title').textContent = '✏️ Editar gasto';
   document.getElementById('modalGasto').classList.add('open');
 }
 async function deleteExpense(id){
   if(!confirm('¿Eliminar este gasto?')) return;
+  const expense = await db.expenses.get(id);
+  await undoExpenseSavingsWithdrawal(expense);
   await db.expenses.delete(id);
   renderAll();
   showToast('🗑️ Gasto eliminado');
@@ -2131,7 +2184,8 @@ async function editIncomeRow(id){
   document.getElementById('i-recurrence').value = i.recurrence||'once';
   const chk = document.getElementById('i-save-as-savings');
   if(chk){ chk.checked = !!i.saveAsSavings; toggleIncomeSavingsSelect(); }
-  if(i.linkedSavingsGoalId && document.getElementById('i-savings-goal')) document.getElementById('i-savings-goal').value = i.linkedSavingsGoalId;
+  if(document.getElementById('i-savings-goal')) document.getElementById('i-savings-goal').value = i.linkedSavingsGoalId || '__free';
+  handleIncomeTypeChange(false);
   document.getElementById('modalIngreso').dataset.editId = id;
   document.querySelector('#modalIngreso .modal-title').textContent = '✏️ Editar ingreso';
   document.getElementById('modalIngreso').classList.add('open');
@@ -2150,7 +2204,9 @@ async function deleteIncome(id){
 // ================================================
 async function renderSavings(){
   const goals = await db.savingsGoals.toArray();
-  const totalMXN = calcSavingsTotalMXN(goals);
+  const freeMXN = await calcFreeSavingsMXN();
+  const goalsMXN = calcSavingsTotalMXN(goals);
+  const totalMXN = freeMXN + goalsMXN;
   const monthlyMXN = goals.reduce((s,g)=>s+(g.monthlyContribution*(g.targetCurrency==='EUR'?state.exchangeRate:1)),0);
   document.getElementById('savings-total').textContent = fmt(convertToDisplay(totalMXN,'MXN'));
   const savingsTotalSub = document.getElementById('savings-total-sub');
@@ -2159,8 +2215,17 @@ async function renderSavings(){
   document.getElementById('savings-projection').textContent = fmt(convertToDisplay(totalMXN+monthlyMXN*12,'MXN'));
 
   const grid = document.getElementById('savings-grid');
-  if(!goals.length){ grid.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🏦</div><div class="empty-title">Sin metas de ahorro</div><div class="empty-sub">Crea tu primera meta financiera</div></div>'; return; }
-  grid.innerHTML = goals.map(g=>{
+  const freeDisp = convertToDisplay(freeMXN,'MXN');
+  const freeCard = `<div class="savings-card" style="border-top:3px solid var(--green)">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <div style="width:40px;height:40px;border-radius:10px;background:rgba(34,197,94,.13);display:flex;align-items:center;justify-content:center;font-size:20px">💰</div>
+      <div><div style="font-weight:600;font-size:14px">Ahorro libre</div><div style="font-size:11px;color:var(--text3)">Ingresos enviados a ahorro, sin meta asignada</div></div>
+    </div>
+    <div class="card-value" style="font-size:24px;margin-bottom:8px">${fmt(freeDisp)}</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Este balance se puede mover a una meta con el botón <strong>+ Depositar</strong> dentro de cada meta.</div>
+  </div>`;
+  if(!goals.length){ grid.innerHTML=freeCard+'<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🏦</div><div class="empty-title">Sin metas de ahorro</div><div class="empty-sub">Crea una meta manualmente cuando quieras separar dinero para algo específico</div></div>'; return; }
+  grid.innerHTML = freeCard + goals.map(g=>{
     const pct = Math.min(100,Math.round(g.currentAmount/Math.max(g.targetAmount,1)*100));
     const currentDisp = convertToDisplay(g.targetCurrency==='EUR'?g.currentAmount*state.exchangeRate:g.currentAmount,'MXN');
     const targetDisp = convertToDisplay(g.targetCurrency==='EUR'?g.targetAmount*state.exchangeRate:g.targetAmount,'MXN');
@@ -2197,6 +2262,8 @@ async function openSavingsTx(goalId, type){
   document.getElementById('stx-amount').value='';
   document.getElementById('stx-reason').value='';
   document.getElementById('stx-currency').value = goal.targetCurrency;
+  const wrap=document.getElementById('stx-from-free-wrap'); if(wrap) wrap.style.display = type==='deposit' ? 'block' : 'none';
+  const chk=document.getElementById('stx-from-free'); if(chk) chk.checked=false;
   openModal('modalSavingsTx');
 }
 
@@ -2705,7 +2772,7 @@ async function sendCopilot(){
   const goals = await db.savingsGoals.toArray();
   const totalExp = expenses.reduce((s,e)=>s+e.amountMXN,0);
   const totalInc = incomes.reduce((s,i)=>s+i.amountMXN,0);
-  const totalSav = calcSavingsTotalMXN(goals);
+  const totalSav = await calcTotalSavingsMXN(goals);
   const profile = state.profile;
 
   const context = `Eres un copiloto financiero personal para Hugo. Sus datos actuales:
@@ -2798,11 +2865,8 @@ async function clearAllData(){
   await db.relocationItems.clear();
   await db.scheduledEvents.clear();
   await db.exchangeRates.clear();
-  await seedRelocItems();
-  await seedSavings();
-  await seedDemoIncome();
   renderAll();
-  showToast('🗑️ Datos eliminados. Se cargaron datos de ejemplo.');
+  showToast('🗑️ Datos eliminados. La app quedó en 0.');
 }
 
 // ================================================
@@ -2818,6 +2882,7 @@ function showToast(msg){
 }
 
 // ================================================
+
 // KEYBOARD SHORTCUTS
 // ================================================
 document.addEventListener('keydown',e=>{
