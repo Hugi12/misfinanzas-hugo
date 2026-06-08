@@ -402,10 +402,15 @@ button,.card,.savings-card{touch-action:manipulation;}
 
       <!-- KPIs -->
       <div class="grid-4" style="margin-bottom:16px;">
-        <div class="card card-accent" onclick="nav('ingresos')" style="cursor:pointer;transition:transform .15s" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform=''">
-          <div class="card-title">Balance del mes <span style="opacity:.4;font-size:10px;">→ Ingresos</span></div>
+        <div class="card card-green" onclick="nav('analitica')" style="cursor:pointer;transition:transform .15s" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform=''">
+          <div class="card-title">Dinero acumulado <span style="opacity:.4;font-size:10px;">histórico</span></div>
+          <div class="card-value lg" id="kpi-accumulated">—</div>
+          <div class="card-sub" id="kpi-accumulated-sub">ingresos históricos − gastos históricos</div>
+        </div>
+        <div class="card card-accent" onclick="nav('presupuestos')" style="cursor:pointer;transition:transform .15s" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform=''">
+          <div class="card-title">Balance del mes <span style="opacity:.4;font-size:10px;">vs budget</span></div>
           <div class="card-value lg" id="kpi-balance">—</div>
-          <div class="card-sub" id="kpi-balance-sub">ingresos - gastos</div>
+          <div class="card-sub" id="kpi-balance-sub">presupuesto - gastos</div>
         </div>
         <div class="card card-green configurable-card" onclick="openSavingsTotalModal()" title="Clic para configurar el ahorro acumulado total">
           <div class="card-title">Ahorro acumulado <span style="opacity:.4;font-size:10px;">→ configurar</span></div>
@@ -1029,13 +1034,14 @@ button,.card,.savings-card{touch-action:manipulation;}
     <div class="modal-title">Configurar presupuesto</div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Categoría</label>
-        <select class="form-input" id="b-category"></select>
+        <select class="form-input" id="b-category" onchange="handleBudgetCategoryChange()"></select>
       </div>
       <div class="form-group"><label class="form-label">Monto presupuestado</label>
         <div class="input-group">
           <input class="form-input" type="number" id="b-amount" placeholder="0.00">
           <select class="form-input" id="b-currency"><option value="MXN">MXN</option><option value="EUR">EUR</option></select>
         </div>
+        <div class="card-sub" id="b-help" style="margin-top:6px;">Puedes definir cuánto planeas gastar este mes.</div>
       </div>
     </div>
     <div class="modal-footer">
@@ -1241,7 +1247,7 @@ async function init(){
 
   // Datos financieros: arranque limpio en 0. No se crean ingresos, gastos, metas ni presupuestos demo.
 
-  renderAll();
+  await renderAll();
   updateCountdown();
   setInterval(updateCountdown, 60000);
 }
@@ -1356,7 +1362,7 @@ async function fetchRate(silent=false){
       await db.exchangeRates.add({from:'EUR',to:'MXN',rate:state.exchangeRate,source:api.source,timestamp:state.rateDate});
       await db.settings.put({key:'lastRate',value:state.exchangeRate,date:state.rateDate,source:api.source});
       updateRateBadge();
-      renderAll();
+      notifyDataChanged();
       if(!silent) showToast('✅ Tipo de cambio actualizado: ' + state.exchangeRate.toFixed(4));
       return;
     } catch(e){
@@ -1374,7 +1380,7 @@ async function fetchRate(silent=false){
     state.rateDate = null;
   }
   updateRateBadge();
-  renderAll();
+  notifyDataChanged();
   if(!silent) showToast('⚠️ No se pudo conectar a APIs. Usando tipo de cambio guardado/manual.');
 }
 
@@ -1410,8 +1416,8 @@ async function setManualRate(){
   await db.exchangeRates.add({from:'EUR',to:'MXN',rate:val,source:'manual',timestamp:state.rateDate});
   await db.settings.put({key:'lastRate',value:val,date:state.rateDate});
   updateRateBadge();
-  renderAll();
-  renderAll();
+  notifyDataChanged();
+  notifyDataChanged();
   showToast('✅ Tipo de cambio manual aplicado');
 }
 
@@ -1422,7 +1428,7 @@ function setCurrency(cur){
   state.currency = cur;
   document.getElementById('btn-mxn').classList.toggle('active', cur==='MXN');
   document.getElementById('btn-eur').classList.toggle('active', cur==='EUR');
-  renderAll();
+  notifyDataChanged();
 }
 
 // ================================================
@@ -1468,7 +1474,7 @@ async function openModal(id){
     const preset=document.getElementById('g-barcelona-preset'); if(preset) preset.value=''; previewBarcelonaEstimate();
   }
   if(id==='modalIngreso'){ document.getElementById('i-date').value = new Date().toISOString().slice(0,10); handleIncomeTypeChange(true); }
-  if(id==='modalPresupuesto') await populateCatSelect('b-category');
+  if(id==='modalPresupuesto'){ await populateCatSelect('b-category'); setTimeout(handleBudgetCategoryChange,0); }
   if(id==='modalEvento') document.getElementById('ev-date').value = new Date().toISOString().slice(0,10);
   if(id==='modalMeta'){
     delete document.getElementById('modalMeta').dataset.editId;
@@ -1505,7 +1511,12 @@ async function populateCatSelect(selectId){
   const cats = await db.categories.toArray();
   const sel = document.getElementById(selectId);
   if(!sel) return;
-  sel.innerHTML = cats.map(c=>`<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+  const baseOptions = cats.map(c=>`<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+  if(selectId==='b-category'){
+    sel.innerHTML = `<option value="0">💼 Nómina del mes (auto)</option>` + baseOptions;
+  } else {
+    sel.innerHTML = baseOptions;
+  }
 }
 
 async function populateSavingsGoalSelect(){
@@ -1519,6 +1530,49 @@ function updateSubcats(){ /* simplified - no subcats in this version */ }
 function toggleSavingsSelect(){
   const checked = document.getElementById('g-from-savings').checked;
   document.getElementById('savings-select-wrap').style.display = checked ? 'block' : 'none';
+}
+
+async function getMonthlySalaryMXN(month=state.currentMonth){
+  const incomes = await db.incomes.where('month').equals(month).toArray();
+  return incomes.filter(i=>i.type==='salary').reduce((s,i)=>s+(Number(i.amountMXN)||0),0);
+}
+async function getBudgetPlannedMXN(month=state.currentMonth){
+  const budgets = await db.budgets.where('month').equals(month).toArray();
+  return budgets.reduce((sum,b)=>sum+(b.plannedCurrency==='EUR'?(Number(b.plannedAmount)||0)*state.exchangeRate:(Number(b.plannedAmount)||0)),0);
+}
+async function ensureSalaryBudget(month=state.currentMonth){
+  const salaryMXN = await getMonthlySalaryMXN(month);
+  const existing = await db.budgets.where({month,categoryId:0}).first();
+  if(salaryMXN>0 && !existing){
+    await db.budgets.add({month,categoryId:0,plannedAmount:salaryMXN,plannedCurrency:'MXN',isAutoSalary:true});
+  }
+}
+async function handleBudgetCategoryChange(){
+  const sel = document.getElementById('b-category');
+  if(!sel) return;
+  if(String(sel.value)==='0'){
+    const salaryMXN = await getMonthlySalaryMXN(state.currentMonth);
+    const existing = await db.budgets.where({month:state.currentMonth,categoryId:0}).first();
+    document.getElementById('b-currency').value = existing?.plannedCurrency || 'MXN';
+    const amountMXN = existing ? (existing.plannedCurrency==='EUR'?existing.plannedAmount*state.exchangeRate:existing.plannedAmount) : salaryMXN;
+    document.getElementById('b-amount').value = Number(convertToDisplay(amountMXN,'MXN')||0).toFixed(2);
+    document.getElementById('b-help').textContent = salaryMXN>0 ? `Detecté nómina del mes por ${fmt(convertToDisplay(salaryMXN,'MXN'))}. Puedes aumentar este monto si quieres sumar extras al budget.` : 'Aún no hay nómina registrada este mes; cuando la agregues, se tomará como base.';
+  } else {
+    document.getElementById('b-help').textContent = 'Puedes definir cuánto planeas gastar este mes en esta categoría.';
+  }
+}
+async function calcHistoricalAccumulatedMXN(){
+  const incomes = await db.incomes.toArray();
+  const expenses = await db.expenses.toArray();
+  const totalInc = incomes.reduce((s,i)=>s+(Number(i.amountMXN)||0),0);
+  const totalExp = expenses.reduce((s,e)=>s+(Number(e.amountMXN)||0),0);
+  return totalInc - totalExp;
+}
+async function calcAutoSavedThisMonthMXN(month=state.currentMonth){
+  const incomes = await db.incomes.where('month').equals(month).toArray();
+  const totalInc = incomes.reduce((s,i)=>s+(Number(i.amountMXN)||0),0);
+  const planned = await getBudgetPlannedMXN(month);
+  return Math.max(0,totalInc-planned);
 }
 
 
@@ -1611,7 +1665,7 @@ async function saveGasto(){
   closeModal('modalGasto');
   document.getElementById('g-amount').value='';
   document.getElementById('g-desc').value='';
-  renderAll();
+  notifyDataChanged();
   showToast('✅ Gasto registrado/actualizado');
 }
 
@@ -1627,10 +1681,11 @@ async function saveIngreso(){
   const recI = {amount,currency,amountMXN,amountEUR,exchangeRateUsed:state.exchangeRate,type:document.getElementById('i-type').value,workplace:document.getElementById('i-workplace')?.value||'',description:document.getElementById('i-desc').value,recurrence:document.getElementById('i-recurrence').value,date,month};
   if(editIdI){ await db.incomes.update(parseInt(editIdI),recI); delete document.getElementById('modalIngreso').dataset.editId; }
   else await db.incomes.add(recI);
+  if(recI.type==='salary') await ensureSalaryBudget(month);
   closeModal('modalIngreso');
   document.getElementById('i-amount').value='';
   document.getElementById('i-desc').value='';
-  renderAll();
+  notifyDataChanged();
   showToast(editIdI ? '✅ Ingreso actualizado' : '✅ Ingreso registrado');
 }
 
@@ -1648,7 +1703,7 @@ async function saveMeta(){
   if(editId){ await db.savingsGoals.update(parseInt(editId),rec); delete document.getElementById('modalMeta').dataset.editId; }
   else await db.savingsGoals.add(rec);
   closeModal('modalMeta');
-  renderAll();
+  notifyDataChanged();
   showToast(editId ? '✅ Meta actualizada' : '✅ Meta creada');
 }
 
@@ -1677,11 +1732,12 @@ async function saveBudget(){
   const currency = document.getElementById('b-currency').value;
   const month = state.currentMonth;
   const existing = await db.budgets.where({month,categoryId:catId}).first();
-  if(existing) await db.budgets.update(existing.id,{plannedAmount:amount,plannedCurrency:currency});
-  else await db.budgets.add({month,categoryId:catId,plannedAmount:amount,plannedCurrency:currency});
+  const rec = {plannedAmount:amount,plannedCurrency:currency,isAutoSalary:catId===0};
+  if(existing) await db.budgets.update(existing.id,rec);
+  else await db.budgets.add({month,categoryId:catId,...rec});
   closeModal('modalPresupuesto');
-  renderAll();
-  showToast('✅ Presupuesto guardado');
+  notifyDataChanged();
+  showToast(catId===0?'✅ Budget de nómina guardado':'✅ Presupuesto guardado');
 }
 
 async function saveEvento(){
@@ -1714,23 +1770,45 @@ async function saveSavingsTx(){
 // ================================================
 // RENDER ALL
 // ================================================
-function renderAll(){
+async function renderAll(){
   const active = document.querySelector('.page.active');
   if(!active) return;
   const id = active.id.replace('page-','');
-  // call render directly without triggering nav() (avoids closeSidebar etc.)
-  if(id==='dashboard') renderDashboard();
-  else if(id==='gastos') renderGastos();
-  else if(id==='ingresos') renderIngresos();
-  else if(id==='ahorros') renderSavings();
-  else if(id==='presupuestos') renderBudgets();
-  else if(id==='mudanza') renderMudanza();
-  else if(id==='calendario') renderCalendar();
-  else if(id==='analitica') renderAnalitica();
+  // Recalcular siempre los indicadores base para evitar tener que refrescar el navegador.
+  try{ await renderDashboard(); }catch(e){ console.warn('renderDashboard', e); }
+  try{ if(id==='gastos') await renderGastos();
+  else if(id==='ingresos') await renderIngresos();
+  else if(id==='ahorros') await renderSavings();
+  else if(id==='presupuestos') await renderBudgets();
+  else if(id==='mudanza') await renderMudanza();
+  else if(id==='calendario') await renderCalendar();
+  else if(id==='analitica') await renderAnalitica();
   else if(id==='simulador') initSimulator();
-  else if(id==='mxes') renderMxEs();
-  else if(id==='configuracion'){updateRateBadge();renderRateHistory();}
+  else if(id==='mxes') await renderMxEs();
+  else if(id==='configuracion'){updateRateBadge(); await renderRateHistory();}
+  }catch(e){ console.error('renderAll active page', e); }
 }
+
+let __refreshTimer=null;
+function scheduleRenderAll(){
+  clearTimeout(__refreshTimer);
+  __refreshTimer=setTimeout(()=>renderAll(),60);
+}
+
+function notifyDataChanged(){
+  scheduleRenderAll();
+  try{ localStorage.setItem('mf_last_change', String(Date.now())); }catch(e){}
+  try{ if(window.mfChannel) window.mfChannel.postMessage({type:'dataChanged', t:Date.now()}); }catch(e){}
+}
+
+try{
+  window.mfChannel = new BroadcastChannel('misfinanzas-hugo');
+  window.mfChannel.onmessage = (ev)=>{ if(ev.data?.type==='dataChanged') scheduleRenderAll(); };
+}catch(e){}
+window.addEventListener('storage', (ev)=>{ if(ev.key==='mf_last_change') scheduleRenderAll(); });
+window.addEventListener('focus', scheduleRenderAll);
+window.addEventListener('pageshow', scheduleRenderAll);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) scheduleRenderAll(); });
 
 
 function calcSavingsTotalMXN(goals){
@@ -1763,14 +1841,14 @@ async function saveSavingsTotalOverride(){
   state.savingsTotalOverride = {enabled,amount,currency};
   await db.settings.put({key:'savingsTotalOverride',value:state.savingsTotalOverride});
   closeModal('modalSavingsTotal');
-  renderAll();
+  notifyDataChanged();
   showToast('✅ Ahorro acumulado actualizado');
 }
 async function clearSavingsTotalOverride(){
   state.savingsTotalOverride = {enabled:false,amount:0,currency:state.currency};
   await db.settings.put({key:'savingsTotalOverride',value:state.savingsTotalOverride});
   closeModal('modalSavingsTotal');
-  renderAll();
+  notifyDataChanged();
   showToast('✅ Usando ahorro calculado desde metas');
 }
 async function calcCarryoverBeforeMonth(month){
@@ -1811,22 +1889,33 @@ async function renderDashboard(){
   const balance = dispInc - dispExp;
 
   // Budgets
+  await ensureSalaryBudget(month);
   const budgets = await db.budgets.where('month').equals(month).toArray();
   const totalBudMXN = budgets.reduce((s,b)=>{
     const amtMXN = b.plannedCurrency==='EUR'?b.plannedAmount*state.exchangeRate:b.plannedAmount;
     return s+amtMXN;
   },0);
-  const remaining = convertToDisplay(totalBudMXN-totalExpMXN,'MXN');
+  const monthlyBudgetBalance = convertToDisplay(totalBudMXN-totalExpMXN,'MXN');
+  const accumulatedMXN = await calcHistoricalAccumulatedMXN();
+  const autoSavedMXN = await calcAutoSavedThisMonthMXN(month);
+  const accumulatedDisp = convertToDisplay(accumulatedMXN,'MXN');
 
-  document.getElementById('kpi-balance').textContent = fmt(balance);
-  document.getElementById('kpi-balance').style.color = balance>=0?'var(--green)':'var(--red)';
-  document.getElementById('kpi-balance-sub').textContent = `${fmt(dispInc)} ingresos − ${fmt(dispExp)} gastos`;
+  const accEl = document.getElementById('kpi-accumulated');
+  if(accEl){
+    accEl.textContent = fmt(accumulatedDisp);
+    accEl.style.color = accumulatedDisp>=0?'var(--green)':'var(--red)';
+    document.getElementById('kpi-accumulated-sub').textContent = autoSavedMXN>0 ? `incluye ${fmt(convertToDisplay(autoSavedMXN,'MXN'))} no usado del mes` : 'ingresos históricos − gastos históricos';
+  }
+
+  document.getElementById('kpi-balance').textContent = fmt(monthlyBudgetBalance);
+  document.getElementById('kpi-balance').style.color = monthlyBudgetBalance>=0?'var(--green)':'var(--red)';
+  document.getElementById('kpi-balance-sub').textContent = totalBudMXN>0 ? `${fmt(convertToDisplay(totalBudMXN,'MXN'))} budget − ${fmt(dispExp)} gastos` : `${fmt(dispInc)} ingresos − ${fmt(dispExp)} gastos`;
 
   document.getElementById('kpi-savings').textContent = fmt(dispSav);
   document.getElementById('kpi-savings-sub').textContent = state.savingsTotalOverride?.enabled ? 'total manual configurado' : `${goals.length} objetivos activos`;
 
-  document.getElementById('kpi-budget').textContent = fmt(remaining);
-  document.getElementById('kpi-budget').style.color = remaining>=0?'var(--green)':'var(--red)';
+  document.getElementById('kpi-budget').textContent = fmt(monthlyBudgetBalance);
+  document.getElementById('kpi-budget').style.color = monthlyBudgetBalance>=0?'var(--green)':'var(--red)';
   document.getElementById('kpi-budget-sub').textContent = totalBudMXN>0?`de ${fmt(convertToDisplay(totalBudMXN,'MXN'))} presupuestado`:'Sin presupuesto definido';
 
   // Score
@@ -1947,14 +2036,14 @@ function prevMonth(){
   const newM = m === 1 ? 12 : m - 1;
   const newY = m === 1 ? y - 1 : y;
   state.currentMonth = `${newY}-${String(newM).padStart(2,'0')}`;
-  renderAll();
+  notifyDataChanged();
 }
 function nextMonth(){
   const [y,m] = state.currentMonth.split('-').map(Number);
   const newM = m === 12 ? 1 : m + 1;
   const newY = m === 12 ? y + 1 : y;
   state.currentMonth = `${newY}-${String(newM).padStart(2,'0')}`;
-  renderAll();
+  notifyDataChanged();
 }
 
 async function renderGastos(){
@@ -2015,7 +2104,7 @@ async function editExpenseRow(id){
 async function deleteExpense(id){
   if(!confirm('¿Eliminar este gasto?')) return;
   await db.expenses.delete(id);
-  renderAll();
+  notifyDataChanged();
   showToast('🗑️ Gasto eliminado');
 }
 
@@ -2053,7 +2142,7 @@ async function editIncomeRow(id){
   document.querySelector('#modalIngreso .modal-title').textContent = '✏️ Editar ingreso';
   document.getElementById('modalIngreso').classList.add('open');
 }
-async function deleteIncome(id){ if(!confirm('¿Eliminar?'))return; await db.incomes.delete(id); renderAll(); showToast('🗑️ Ingreso eliminado'); }
+async function deleteIncome(id){ if(!confirm('¿Eliminar?'))return; await db.incomes.delete(id); notifyDataChanged(); showToast('🗑️ Ingreso eliminado'); }
 
 // ================================================
 // AHORROS
@@ -2127,14 +2216,16 @@ async function editGoal(id){
   document.querySelector('#modalMeta .modal-title').textContent = '✏️ Editar meta de ahorro';
   document.getElementById('modalMeta').classList.add('open');
 }
-async function deleteGoal(id){ if(!confirm('¿Eliminar esta meta?'))return; await db.savingsGoals.delete(id); renderAll(); showToast('🗑️ Meta eliminada'); }
+async function deleteGoal(id){ if(!confirm('¿Eliminar esta meta?'))return; await db.savingsGoals.delete(id); notifyDataChanged(); showToast('🗑️ Meta eliminada'); }
 
 // ================================================
 // PRESUPUESTOS
 // ================================================
 async function renderBudgets(){
   document.getElementById('currentMonthDisplayPresupuesto').textContent = monthLabel(state.currentMonth);
-  const cats = await db.categories.toArray();
+  await ensureSalaryBudget(state.currentMonth);
+  const realCats = await db.categories.toArray();
+  const cats = [{id:0,name:'Nómina del mes',icon:'💼',color:'#22c55e'}, ...realCats];
   const budgets = await db.budgets.where('month').equals(state.currentMonth).toArray();
   const expenses = await db.expenses.where('month').equals(state.currentMonth).toArray();
   const budMap = Object.fromEntries(budgets.map(b=>[b.categoryId,b]));
@@ -2206,14 +2297,16 @@ async function editBudgetRow(catId){
     document.getElementById('b-currency').value = 'MXN';
   }
   openModal('modalPresupuesto');
+  setTimeout(handleBudgetCategoryChange,0);
 }
+
 
 async function deleteBudgetRow(catId){
   const existing = await db.budgets.where({month:state.currentMonth,categoryId:catId}).first();
   if(!existing){ showToast('No hay presupuesto para borrar'); return; }
   if(!confirm('¿Eliminar este presupuesto?')) return;
   await db.budgets.delete(existing.id);
-  renderAll();
+  notifyDataChanged();
   showToast('🗑️ Presupuesto eliminado');
 }
 
@@ -2548,7 +2641,7 @@ async function saveProfile(){
   const profile = {id:1,name:document.getElementById('cfg-nombre').value,currentCity:document.getElementById('cfg-ciudad').value,destinationCity:document.getElementById('cfg-destino').value,movingDate:document.getElementById('cfg-mudanza').value,incomeMXN:parseFloat(document.getElementById('cfg-income-mxn').value)||22043.80,incomeEUR:parseFloat(document.getElementById('cfg-income-eur').value)||2303,primaryCurrency:state.currency};
   await db.profile.put(profile);
   state.profile = profile;
-  renderAll();
+  notifyDataChanged();
   showToast('✅ Perfil guardado');
 }
 
@@ -2688,7 +2781,7 @@ async function importData(event){
     if(data.budgets) await db.budgets.bulkPut(data.budgets);
     if(data.relocationItems) await db.relocationItems.bulkPut(data.relocationItems);
     if(data.scheduledEvents) await db.scheduledEvents.bulkPut(data.scheduledEvents);
-    renderAll();
+    notifyDataChanged();
     showToast('✅ Datos importados correctamente');
   } catch(e){
     showToast('⚠️ Error al importar. El archivo puede estar corrupto.');
@@ -2709,7 +2802,7 @@ async function clearAllData(){
   await seedRelocItems();
   await seedSavings();
   await seedDemoIncome();
-  renderAll();
+  notifyDataChanged();
   showToast('🗑️ Datos eliminados. Se cargaron datos de ejemplo.');
 }
 
@@ -2745,6 +2838,15 @@ document.querySelectorAll('.modal-overlay').forEach(overlay=>{
 // ================================================
 // START
 // ================================================
+
+// Recalcula al cerrar modales, cambiar pestaña o volver desde iPhone PWA.
+document.addEventListener('input', (ev)=>{
+  if(ev.target && ev.target.matches('input, select, textarea')){
+    // No guardamos automáticamente; solo refrescamos cálculos visuales de simuladores/formularios activos.
+    if(['sim-income','sim-expense','sim-extra','sim-rate'].includes(ev.target.id)) return;
+  }
+});
+
 init().catch(console.error);
 </script>
 </body>
