@@ -414,7 +414,7 @@ button,.card,.savings-card{touch-action:manipulation;}
         <div class="card card-green" onclick="nav('analitica')" style="cursor:pointer;transition:transform .15s" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform=''">
           <div class="card-title">Dinero acumulado <span style="opacity:.4;font-size:10px;">histórico</span></div>
           <div class="card-value lg" id="kpi-accumulated">—</div>
-          <div class="card-sub" id="kpi-accumulated-sub">ahorro libre + metas + budget disponible</div>
+          <div class="card-sub" id="kpi-accumulated-sub">ingresos históricos − gastos históricos</div>
         </div>
         <div class="card card-accent" onclick="nav('presupuestos')" style="cursor:pointer;transition:transform .15s" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform=''">
           <div class="card-title">Balance del mes <span style="opacity:.4;font-size:10px;">vs budget</span></div>
@@ -571,7 +571,7 @@ button,.card,.savings-card{touch-action:manipulation;}
         <div class="card card-green" style="cursor:default" title="Se calcula automáticamente desde ingresos clasificados como ahorro y metas">
           <div class="card-title">Ahorro acumulado total <span style="opacity:.45;font-size:10px;">automático</span></div>
           <div class="card-value" id="savings-total">—</div>
-          <div class="card-sub" id="savings-total-sub">calculado desde metas y depósitos</div>
+          <div class="card-sub" id="savings-total-sub">metas + ahorro libre + presupuesto disponible</div>
         </div>
         <div class="card">
           <div class="card-title">Aportación mensual</div>
@@ -1256,7 +1256,7 @@ async function init(){
   const relocCount = await db.relocationItems.count();
   if(relocCount === 0) await seedRelocItems();
 
-  // v10: no se crean ingresos ni metas demo automáticamente. Todo inicia limpio en 0.
+  // v12: dinero acumulado restaurado; ahorro acumulado incluye presupuesto disponible del mes.
 
   renderAll();
   updateCountdown();
@@ -1572,11 +1572,12 @@ async function calcBudgetReserveMXN(month=null){
 }
 
 async function calcHistoricalAccumulatedMXN(){
-  // Dinero acumulado = ahorro libre + metas + presupuesto disponible.
-  // Si un mes se gasta más que su presupuesto, el excedente resta del acumulado.
-  const savingsMXN = await calcTotalSavingsMXN();
-  const budgetReserveMXN = await calcBudgetReserveMXN();
-  return savingsMXN + budgetReserveMXN;
+  // Dinero acumulado: se mantiene como estaba: ingresos históricos - gastos históricos.
+  const incomes = await db.incomes.toArray();
+  const expenses = await db.expenses.toArray();
+  const totalInc = incomes.reduce((s,i)=>s+(Number(i.amountMXN)||0),0);
+  const totalExp = expenses.reduce((s,e)=>s+(Number(e.amountMXN)||0),0);
+  return totalInc - totalExp;
 }
 async function calcAutoSavedThisMonthMXN(month=state.currentMonth){
   const incomes = await db.incomes.where('month').equals(month).toArray();
@@ -1598,6 +1599,14 @@ async function calcFreeSavingsMXN(){
 async function calcTotalSavingsMXN(goals=null){
   if(!goals) goals = await db.savingsGoals.toArray();
   return calcSavingsTotalMXN(goals) + await calcFreeSavingsMXN();
+}
+
+async function calcAccumulatedSavingsWithBudgetMXN(month=state.currentMonth, goals=null){
+  // Ahorro acumulado: ahorro libre + metas + presupuesto disponible del mes.
+  // Conforme se agregan gastos, el presupuesto disponible baja; si te pasas, resta.
+  const baseSavings = await calcTotalSavingsMXN(goals);
+  const monthBudgetAvailable = await calcBudgetReserveMXN(month);
+  return baseSavings + monthBudgetAvailable;
 }
 
 async function populateIncomeSavingsGoalSelect(){
@@ -1942,14 +1951,15 @@ async function renderDashboard(){
 
   const totalExpMXN = expenses.reduce((s,e)=>s+e.amountMXN,0);
   const totalIncMXN = incomes.reduce((s,i)=>s+i.amountMXN,0);
-  const totalSavMXN = await calcTotalSavingsMXN(goals);
+  const baseSavMXN = await calcTotalSavingsMXN(goals);
+  const totalSavMXN = await calcAccumulatedSavingsWithBudgetMXN(month, goals);
 
   const dispExp = convertToDisplay(totalExpMXN,'MXN');
   const dispInc = convertToDisplay(totalIncMXN,'MXN');
   const dispSav = convertToDisplay(totalSavMXN,'MXN');
   const balance = dispInc - dispExp;
 
-  // Budgets / dinero acumulado
+  // Budgets / dinero acumulado y ahorro acumulado
   await ensureSalaryBudget(month);
   const budgets = await db.budgets.where('month').equals(month).toArray();
   const totalBudMXN = budgets.reduce((s,b)=>{
@@ -1966,7 +1976,7 @@ async function renderDashboard(){
     accEl.textContent = fmt(accumulatedDisp);
     accEl.style.color = accumulatedDisp>=0?'var(--green)':'var(--red)';
     const sub = document.getElementById('kpi-accumulated-sub');
-    if(sub) sub.textContent = `ahorro libre + metas + budget disponible (${fmt(convertToDisplay(await calcBudgetReserveMXN(month),'MXN'))} este mes)`;
+    if(sub) sub.textContent = 'ingresos históricos − gastos históricos';
   }
 
   document.getElementById('kpi-balance').textContent = fmt(remaining);
@@ -1974,7 +1984,7 @@ async function renderDashboard(){
   document.getElementById('kpi-balance-sub').textContent = totalBudMXN>0 ? `${fmt(convertToDisplay(totalBudMXN,'MXN'))} budget − ${fmt(dispExp)} gastos` : `${fmt(dispInc)} ingresos − ${fmt(dispExp)} gastos`;
 
   document.getElementById('kpi-savings').textContent = fmt(dispSav);
-  document.getElementById('kpi-savings-sub').textContent = `${goals.length} metas + ahorro libre`;
+  document.getElementById('kpi-savings-sub').textContent = `${goals.length} metas + ahorro libre + ${fmt(convertToDisplay(await calcBudgetReserveMXN(month),'MXN'))} presupuesto disponible`;
 
   document.getElementById('kpi-budget').textContent = fmt(remaining);
   document.getElementById('kpi-budget').style.color = remaining>=0?'var(--green)':'var(--red)';
@@ -2228,11 +2238,12 @@ async function renderSavings(){
   const goals = await db.savingsGoals.toArray();
   const freeMXN = await calcFreeSavingsMXN();
   const goalsMXN = calcSavingsTotalMXN(goals);
-  const totalMXN = freeMXN + goalsMXN;
+  const budgetAvailableMXN = await calcBudgetReserveMXN(state.currentMonth);
+  const totalMXN = freeMXN + goalsMXN + budgetAvailableMXN;
   const monthlyMXN = goals.reduce((s,g)=>s+(g.monthlyContribution*(g.targetCurrency==='EUR'?state.exchangeRate:1)),0);
   document.getElementById('savings-total').textContent = fmt(convertToDisplay(totalMXN,'MXN'));
   const savingsTotalSub = document.getElementById('savings-total-sub');
-  if(savingsTotalSub) savingsTotalSub.textContent = 'calculado desde tus metas y depósitos';
+  if(savingsTotalSub) savingsTotalSub.textContent = `metas + ahorro libre + ${fmt(convertToDisplay(budgetAvailableMXN,'MXN'))} presupuesto disponible del mes`;
   document.getElementById('savings-monthly').textContent = fmt(convertToDisplay(monthlyMXN,'MXN'));
   document.getElementById('savings-projection').textContent = fmt(convertToDisplay(totalMXN+monthlyMXN*12,'MXN'));
 
